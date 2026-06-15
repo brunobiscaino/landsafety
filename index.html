@@ -196,6 +196,32 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
 </head>
 <body>
 
+<!-- TELA DE LOGIN -->
+<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:var(--navy);background-image:var(--diag)">
+  <div style="width:100%;max-width:380px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:700;color:var(--sage);letter-spacing:4px">LAND</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--white);letter-spacing:3px;text-transform:uppercase">LandSafety ISP</div>
+      <div style="font-size:11px;color:var(--mist);letter-spacing:2px;text-transform:uppercase;margin-top:4px">LAND CENA &middot; Equatorial Piau&iacute; &middot; NP.00029.EQTL</div>
+    </div>
+    <div style="background:rgba(29,64,56,.6);border:1px solid var(--card-border);padding:28px 24px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:20px">&#128274; Acesso ao Sistema</div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Matr&iacute;cula</label>
+        <input class="form-input" id="login-mat" placeholder="N&ordm; de matr&iacute;cula" autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label class="form-label">Senha</label>
+        <input class="form-input" type="password" id="login-senha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <div id="login-erro" style="display:none;background:rgba(176,58,46,.15);border:1px solid rgba(176,58,46,.4);color:#e07c74;font-size:12px;padding:8px 12px;margin-bottom:14px;letter-spacing:.5px"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="fazerLogin()">ENTRAR</button>
+      <div style="margin-top:16px;font-size:11px;color:var(--mist);opacity:.6;text-align:center">Acesso restrito &middot; Colaboradores autorizados</div>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell-wrapper" style="display:none;flex-direction:column;min-height:100vh">
 <div class="topbar">
   <div class="topbar-left">
     <div class="topbar-logo">LAND</div>
@@ -208,6 +234,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     <span id="sync-indicator" style="font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap" title="Status de sincroniza\u00e7\u00e3o">&#9881;\ufe0f Conectando...</span>
     <div class="status-dot"></div>
     <select id="user-switcher" class="form-select" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:1px" onchange="applyPermissions()"></select>
+    <button onclick="fazerLogout()" style="background:none;border:1px solid rgba(195,204,154,.3);color:var(--sage);padding:4px 10px;font-size:10px;letter-spacing:1px;cursor:pointer;font-family:'Barlow Condensed',sans-serif" title="Sair">&#128682; SAIR</button>
   </div>
 </div>
 
@@ -253,6 +280,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   <div class="grid-2">
     <div class="card"><div class="card-title">Top desvios frequentes</div><div id="chart-desvios"><div class="empty-state"><div class="ei">&#128200;</div><p>Realize inspe&ccedil;&otilde;es para ver os dados</p></div></div></div>
     <div class="card"><div class="card-title">Ranking &middot; Colaboradores com mais NC</div><div id="ranking-colab"><div class="empty-state"><div class="ei">&#128119;</div><p>Sem dados de NC por colaborador ainda</p></div></div></div>
+    <div class="card"><div class="card-title">&#127942; Ranking &middot; Inspetores mais ativos</div><div id="ranking-inspetores"><div class="empty-state"><div class="ei">&#128202;</div><p>Realize inspe&ccedil;&otilde;es para ver o ranking</p></div></div></div>
   </div>
   <div class="card" style="margin-bottom:16px">
     <div class="card-title">Ciclo de inspe&ccedil;&atilde;o &middot; 30 dias</div>
@@ -651,7 +679,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     </div>
     <div class="form-row cols-2">
       <div class="form-group"><label class="form-label">Cargo</label><input class="form-input" id="mc-cargo" placeholder="Eletricista, T&eacute;cnico..."></div>
-      <div class="form-group"><label class="form-label">Empresa</label><input class="form-input" id="mc-empresa" placeholder="LAN CENA" value="LAN CENA"></div>
+      <div class="form-group"><label class="form-label">Empresa</label><input class="form-input" id="mc-empresa" placeholder="LAND CENA" value="LAND CENA"></div>
     </div>
     <div class="form-group" style="margin-bottom:14px"><label class="form-label">Contrato</label><input class="form-input" id="mc-contrato" placeholder="PLPT TERESINA"></div>
     <div class="card-title" style="margin-bottom:10px;font-size:11px;letter-spacing:2px">VENCIMENTOS DE DOCUMENTOS</div>
@@ -763,7 +791,35 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   </div>
 </div>
 
-<!-- MODAL RESULTADO -->
+<!-- MODAL DESATIVAR COLABORADOR -->
+<div class="overlay" id="modal-desativar-colab">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-desativar-colab')">&#10005;</button>
+    <div class="modal-title">&#128683; Desativar Colaborador</div>
+    <input type="hidden" id="dc-id">
+    <div id="dc-nome" style="color:var(--white);font-weight:700;margin-bottom:16px;font-size:15px"></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Motivo da desativa&ccedil;&atilde;o <span style="color:#e07c74">*</span></label>
+      <select class="form-select" id="dc-motivo">
+        <option value="">Selecionar motivo</option>
+        <option value="Afastamento INSS">Afastamento INSS</option>
+        <option value="Demiss&atilde;o">Demiss&atilde;o</option>
+        <option value="Transfer&ecirc;ncia">Transfer&ecirc;ncia</option>
+        <option value="F&eacute;rias">F&eacute;rias</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label class="form-label">Data</label>
+      <input class="form-input" type="date" id="dc-data">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-danger" style="background:#B03A2E;color:#fff" onclick="confirmarDesativar()">DESATIVAR</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-desativar-colab')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-resultado">
   <div class="modal" style="max-width:640px">
     <div class="modal-title">&#10003; Inspe&ccedil;&atilde;o Finalizada</div>
@@ -774,6 +830,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     </div>
   </div>
 </div>
+</div><!-- /app-shell-wrapper -->
 
 <script>
 const CHECKLIST={GV:[
@@ -878,7 +935,7 @@ const CHECKLIST={GV:[
 {code:'L09',desc:'Os empregados no solo est\u00e3o em local seguro, livre de queda de material da poda?'}
 ]};
 
-const EMPRESA='CENA';
+const EMPRESA='LAND CENA';
 
 /* ============ SUPABASE ============ */
 const SUPABASE_URL='https://byaahdtiqrompciqhuqa.supabase.co';
@@ -943,7 +1000,8 @@ async function loadColaboradores(){
       id:r.id,nome:r.nome,mat:r.matricula||'',cargo:r.cargo||'',empresa:r.empresa||'',contrato:r.contrato||'',
       ultimaInspecao:r.ultima_insp_data||null,
       aso:r.aso||null,cnh:r.cnh||null,nr10:r.nr10||null,nr35:r.nr35||null,
-      nr12cesto:r.nr12_cesto||null,nr12moto:r.nr12_moto||null,nr12cesta:r.nr12_cesta||null
+      nr12cesto:r.nr12_cesto||null,nr12moto:r.nr12_moto||null,nr12cesta:r.nr12_cesta||null,
+      ativo:r.ativo!==false,motivoDesativacao:r.motivo_desativacao||null,dataDesativacao:r.data_desativacao||null
     };});
     colabIdSeq=-1;
   }
@@ -1079,12 +1137,13 @@ function capturarGPS(){
 function renderColabSelect(){
   const container=document.getElementById('colab-select-list');
   if(!container)return;
-  if(state.colaboradores.length===0){
-    container.innerHTML='<div style="font-size:12px;color:var(--mist);opacity:.6">Nenhum colaborador cadastrado. <a href="#" onclick="showView(\'colaboradores\');return false" style="color:var(--sage)">Cadastrar agora</a></div>';
+  const ativos=state.colaboradores.filter(function(c){return c.ativo!==false;});
+  if(ativos.length===0){
+    container.innerHTML='<div style="font-size:12px;color:var(--mist);opacity:.6">Nenhum colaborador ativo. <a href="#" onclick="showView(\'colaboradores\');return false" style="color:var(--sage)">Cadastrar agora</a></div>';
     document.getElementById('colab-select-count').textContent='0 selecionado(s)';
     return;
   }
-  container.innerHTML=state.colaboradores.map(function(c){
+  container.innerHTML=ativos.map(function(c){
     const sel=state.selectedColabIds.indexOf(c.id)>=0;
     return '<label class="colab-chip '+(sel?'selected':'')+'"><input type="checkbox" value="'+c.id+'" onchange="toggleColabSelect(\''+c.id+'\')" '+(sel?'checked':'')+'>'+c.nome+' &middot; '+(c.cargo||'')+'</label>';
   }).join('');
@@ -1428,6 +1487,44 @@ function finalizarChecklist(){
 }
 
 let _salvandoInspecao=false;
+let _loggedUserId=null;
+
+/* ============ LOGIN / AUTH ============ */
+function fazerLogin(){
+  const mat=document.getElementById('login-mat').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const erroEl=document.getElementById('login-erro');
+  if(!mat||!senha){erroEl.textContent='Informe a matr\u00edcula e a senha.';erroEl.style.display='block';return;}
+  const user=state.usuarios.find(function(u){return (u.mat||'').toLowerCase()===mat.toLowerCase();});
+  if(!user){erroEl.textContent='Matr\u00edcula n\u00e3o encontrada.';erroEl.style.display='block';return;}
+  /* Senha simples: padr\u00e3o \u00e9 a pr\u00f3pria matr\u00edcula ou campo senha do usu\u00e1rio */
+  const senhaCorreta=user.senha||user.mat||'1234';
+  if(senha!==senhaCorreta){erroEl.textContent='Senha incorreta.';erroEl.style.display='block';return;}
+  erroEl.style.display='none';
+  _loggedUserId=user.id;
+  /* Sincronizar user-switcher */
+  const sel=document.getElementById('user-switcher');
+  if(sel)sel.value=user.id;
+  /* Mostrar app */
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-shell-wrapper').style.display='flex';
+  applyPermissions();
+  refreshDashboard();
+  updateAlertBadge();
+  updatePendenciasBadge();
+  /* M4: pr\u00e9-selecionar agente executor */
+  if(state.selectedAgenteIds.indexOf(user.id)<0){
+    state.selectedAgenteIds=[user.id];
+  }
+}
+function fazerLogout(){
+  _loggedUserId=null;
+  document.getElementById('login-mat').value='';
+  document.getElementById('login-senha').value='';
+  document.getElementById('login-erro').style.display='none';
+  document.getElementById('app-shell-wrapper').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
 let _inspOfflineQueue=[];
 
 async function salvarInspecao(){
@@ -1892,6 +1989,28 @@ function refreshDashboard(){
     }).join('');
   }
   refreshECResumo();
+  /* M3 - ranking de inspetores */
+  const rankInspEl=document.getElementById('ranking-inspetores');
+  if(rankInspEl){
+    const inspCount={};
+    state.inspecoes.forEach(function(i){
+      (i.agentes||[]).forEach(function(a){
+        const nome=a.nome||a;
+        inspCount[nome]=(inspCount[nome]||0)+1;
+      });
+    });
+    const sorted=Object.entries(inspCount).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+    if(sorted.length===0){
+      rankInspEl.innerHTML='<div class="empty-state"><div class="ei">&#128202;</div><p>Realize inspe\u00e7\u00f5es para ver o ranking</p></div>';
+    }else{
+      const maxI=sorted[0][1];
+      rankInspEl.innerHTML=sorted.map(function(e,idx){
+        const medals=['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
+        const pos=medals[idx]||'<span style="font-size:12px;color:var(--mist)">'+(idx+1)+'</span>';
+        return '<div class="rank-row"><div class="rank-pos">'+pos+'</div><div class="rank-name">'+e[0]+'</div><div class="rank-track"><div class="rank-fill" style="width:'+Math.round(e[1]/maxI*100)+'%;background:var(--sage)"></div></div><div class="rank-val">'+e[1]+'</div></div>';
+      }).join('');
+    }
+  }
   updateAlertBadge();
 }
 
@@ -1950,7 +2069,7 @@ function openInspDetalhe(inspId){
   /* show edit/delete only for Administrador */
   const activeUser=state.usuarios.find(function(u){return String(u.id)===document.getElementById('user-switcher').value;});
   const activePerfil=activeUser?PERFIS.find(function(p){return p.id===activeUser.perfilId;}):null;
-  const isAdminUser=activePerfil&&activePerfil.permissoes.indexOf('todos')>=0;
+  const isAdminUser=activePerfil&&(activePerfil.permissoes.indexOf('todos')>=0||activePerfil.nome==='Gerente de Contratos');
   const adminBtns=document.getElementById('insp-admin-btns');
   if(adminBtns)adminBtns.style.display=isAdminUser?'flex':'none';
   openModal('modal-insp-detalhe');
@@ -2174,9 +2293,8 @@ async function salvarEC(){
   refreshNCList();updateBadges();refreshDashboard();
 }
 function getActiveUserName(){
-  const sel=document.getElementById('user-switcher');
-  const userId=parseInt(sel.value);
-  const user=state.usuarios.find(function(u){return u.id===userId;});
+  const id=_loggedUserId||(parseInt((document.getElementById('user-switcher')||{value:'1'}).value)||1);
+  const user=state.usuarios.find(function(u){return u.id===id;});
   return user?user.nome:'Administrador';
 }
 function openECView(inspId,code){
@@ -2315,7 +2433,9 @@ function refreshColabList(){
     const ncCount=ranking[c.nome]||0;
     const docsAlerta=getDocsAlerta(c);
     const docsBadges=docsAlerta.length>0?docsAlerta.map(docBadgeHTML).join(' '):'<span class="badge badge-ok">OK</span>';
-    return '<tr><td style="color:var(--white);font-weight:700">'+c.nome+'</td><td>'+(c.cargo||'\u2014')+'</td><td>'+(c.contrato||'\u2014')+'</td><td style="max-width:160px">'+docsBadges+'</td><td>'+(c.ultimaInspecao?new Date(c.ultimaInspecao).toLocaleDateString('pt-BR'):'\u2014')+'</td><td>'+(ciclo.proxima?ciclo.proxima.toLocaleDateString('pt-BR'):'\u2014')+'</td><td style="color:'+(ncCount>0?'#e07c74':'var(--mist)')+';font-weight:700">'+ncCount+'</td><td><span class="badge '+ciclo.cls+'">'+ciclo.label+'</span></td><td><button class="btn btn-outline btn-sm" onclick="openEditColab(\''+c.id+'\')">&#9998;</button></td></tr>';
+    const statusBadge=c.ativo!==false?'':'<span class="badge badge-nc" title="'+( c.motivoDesativacao||'')+(c.dataDesativacao?' \u00b7 '+new Date(c.dataDesativacao+'T00:00:00').toLocaleDateString('pt-BR'):'')+'">\u{1F6AB} Inativo</span> ';
+    const deactivateBtn=c.ativo!==false?'<button class="btn btn-outline btn-sm" style="border-color:rgba(176,58,46,.4);color:#e07c74" onclick="openDesativarColab(\''+c.id+'\')">&#128683;</button>':'<button class="btn btn-outline btn-sm" onclick="reativarColab(\''+c.id+'\')" title="Reativar">&#9996; Reativar</button>';
+    return '<tr style="opacity:'+(c.ativo!==false?'1':'.55')+'"><td style="color:var(--white);font-weight:700">'+statusBadge+c.nome+'</td><td>'+(c.cargo||'\u2014')+'</td><td>'+(c.contrato||'\u2014')+'</td><td style="max-width:160px">'+docsBadges+'</td><td>'+(c.ultimaInspecao?new Date(c.ultimaInspecao).toLocaleDateString('pt-BR'):'\u2014')+'</td><td>'+(ciclo.proxima?ciclo.proxima.toLocaleDateString('pt-BR'):'\u2014')+'</td><td style="color:'+(ncCount>0?'#e07c74':'var(--mist)')+';font-weight:700">'+ncCount+'</td><td><span class="badge '+ciclo.cls+'">'+ciclo.label+'</span></td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditColab(\''+c.id+'\')">&#9998;</button> '+deactivateBtn+'</td></tr>';
   }).join('');
 }
 let editingColabId=null;
@@ -2379,8 +2499,39 @@ async function salvarColab(){
   renderColabSelect();
   updateAlertBadge();
 }
-
-/* ============ CSV - EXPORT / IMPORT EM MASSA (COLABORADORES) ============ */
+function openDesativarColab(id){
+  const c=state.colaboradores.find(function(c){return String(c.id)===String(id);});
+  if(!c)return;
+  document.getElementById('dc-id').value=id;
+  document.getElementById('dc-nome').textContent=c.nome+' \u00b7 '+(c.cargo||'');
+  document.getElementById('dc-motivo').value='';
+  document.getElementById('dc-data').value=new Date().toISOString().substring(0,10);
+  openModal('modal-desativar-colab');
+}
+async function confirmarDesativar(){
+  const id=document.getElementById('dc-id').value;
+  const motivo=document.getElementById('dc-motivo').value;
+  const data=document.getElementById('dc-data').value;
+  if(!motivo){alert('Selecione o motivo da desativa\u00e7\u00e3o.');return;}
+  const c=state.colaboradores.find(function(c){return String(c.id)===String(id);});
+  if(!c)return;
+  c.ativo=false;c.motivoDesativacao=motivo;c.dataDesativacao=data;
+  await sbUpdate('colaboradores',id,{ativo:false,motivo_desativacao:motivo,data_desativacao:data||null});
+  updateSyncIndicator();
+  closeModal('modal-desativar-colab');
+  refreshColabList();renderColabSelect();
+  showToast('\u{1F6AB} '+c.nome+' desativado: '+motivo,'warn');
+}
+async function reativarColab(id){
+  const c=state.colaboradores.find(function(c){return String(c.id)===String(id);});
+  if(!c)return;
+  if(!confirm('Reativar o colaborador "'+c.nome+'"?'))return;
+  c.ativo=true;c.motivoDesativacao=null;c.dataDesativacao=null;
+  await sbUpdate('colaboradores',id,{ativo:true,motivo_desativacao:null,data_desativacao:null});
+  updateSyncIndicator();
+  refreshColabList();renderColabSelect();
+  showToast('\u2705 '+c.nome+' reativado','ok');
+}
 const COLAB_CSV_HEADER=['nome','matricula','cargo','empresa','contrato','ultimaInspecao'];
 function csvEscape(val){
   val=(val===null||val===undefined)?'':String(val);
@@ -2649,7 +2800,9 @@ function deletePerfil(perfilId){
 /* ============ APLICAR PERMISSOES (RBAC) ============ */
 function applyPermissions(){
   const sel=document.getElementById('user-switcher');
-  const userId=parseInt(sel.value);
+  /* M4: se há usuário logado, forçar switcher para ele */
+  if(_loggedUserId&&sel)sel.value=_loggedUserId;
+  const userId=_loggedUserId||(parseInt(sel?sel.value:'1')||1);
   const user=state.usuarios.find(function(u){return u.id===userId;})||state.usuarios[0];
   const perfil=PERFIS.find(function(p){return p.id===user.perfilId;})||PERFIS[0];
   const allowed=perfil.permissoes;
@@ -2688,6 +2841,7 @@ function refreshEmpresa(){
 /* ============ INIT ============ */
 document.addEventListener('DOMContentLoaded',function(){
   (async function(){
+    /* Carregar dados em background enquanto login screen está visível */
     await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores()]);
     await loadInspecoes();
     await loadNCs();
@@ -2695,12 +2849,13 @@ document.addEventListener('DOMContentLoaded',function(){
     renderUserSwitcher();
     renderAgenteSelect();
     renderSupervisorSelect();
-    applyPermissions();
-    refreshDashboard();
     renderColabSelect();
     refreshColabList();
-    updateAlertBadge();
     updateSyncIndicator();
+    /* M1: mostrar login, não o app */
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app-shell-wrapper').style.display='none';
+    /* senha padrão = matrícula para todos os usuários sem senha definida */
     document.getElementById('filter-nc-cat').addEventListener('change',refreshNCList);
     document.getElementById('filter-nc-status').addEventListener('change',refreshNCList);
     document.getElementById('search-nc').addEventListener('input',refreshNCList);
