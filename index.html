@@ -700,7 +700,8 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     <div class="form-row cols-3">
       <div class="form-group"><label class="form-label">NR-12 Cesto Acop.</label><input class="form-input" type="date" id="mc-nr12cesto"></div>
       <div class="form-group"><label class="form-label">NR-12 Motosserra</label><input class="form-input" type="date" id="mc-nr12moto"></div>
-      <div class="form-group"><label class="form-label">NR-12 Cesta A&eacute;rea</label><input class="form-input" type="date" id="mc-nr12cesta"></div>
+      <div class="form-group"><label class="form-label">NR-12 Cesta A&eacute;rea</label><input class="form-input" type="date" id="mc-nr12cesta">
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Venc. NR-12 Martelete</label><input class="form-input" type="date" id="mc-nr12martelete"></div></div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarColab()">SALVAR</button>
@@ -1016,7 +1017,7 @@ async function loadColaboradores(){
       id:r.id,nome:r.nome,mat:r.matricula||'',cargo:r.cargo||'',empresa:r.empresa||'',contrato:r.contrato||'',
       ultimaInspecao:r.ultima_insp_data||null,
       aso:r.aso||null,cnh:r.cnh||null,nr10:r.nr10||null,nr35:r.nr35||null,
-      nr12cesto:r.nr12_cesto||null,nr12moto:r.nr12_moto||null,nr12cesta:r.nr12_cesta||null,
+      nr12cesto:r.nr12_cesto||null,nr12moto:r.nr12_moto||null,nr12cesta:r.nr12_cesta||null,nr12martelete:r.nr12_martelete||null,
       ativo:r.ativo!==false,motivoDesativacao:r.motivo_desativacao||null,dataDesativacao:r.data_desativacao||null
     };});
     colabIdSeq=-1;
@@ -1704,6 +1705,8 @@ const DOCS_CONFIG=[
   {key:'nr12cesto',label:'NR-12 Cesto'},
   {key:'nr12moto',label:'NR-12 Motosserra'},
   {key:'nr12cesta',label:'NR-12 Cesta A\u00e9rea'}
+,
+  {key:'nr12martelete',label:'NR-12 Martelete'}
 ];
 function getDocVencimentos(c){
   /* Retorna array de {label, venc, diasRestantes, status} */
@@ -2234,7 +2237,10 @@ async function confirmarExcluirInspecao(){
   refreshInspecoesList();
   refreshNCList();
   refreshDashboard();
+  refreshECResumo();
   updateBadges();
+  updateAlertBadge();
+  updatePendenciasBadge();
   showToast('\ud83d\uddd1\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' exclu\u00edda do banco','ok');
 }
 
@@ -2476,6 +2482,7 @@ function openEditColab(id){
   document.getElementById('mc-nr12cesto').value=c.nr12cesto||'';
   document.getElementById('mc-nr12moto').value=c.nr12moto||'';
   document.getElementById('mc-nr12cesta').value=c.nr12cesta||'';
+  document.getElementById('mc-nr12martelete').value=c.nr12martelete||'';
   openModal('modal-colab');
 }
 async function salvarColab(){
@@ -2490,13 +2497,14 @@ async function salvarColab(){
     nr35:document.getElementById('mc-nr35').value||null,
     nr12cesto:document.getElementById('mc-nr12cesto').value||null,
     nr12moto:document.getElementById('mc-nr12moto').value||null,
-    nr12cesta:document.getElementById('mc-nr12cesta').value||null
+    nr12cesta:document.getElementById('mc-nr12cesta').value||null,
+    nr12martelete:document.getElementById('mc-nr12martelete').value||null
   };
   const dbPayload={
     nome:fields.nome,matricula:fields.mat||null,cargo:fields.cargo||null,
     empresa:fields.empresa||null,contrato:fields.contrato||null,
     aso:fields.aso,cnh:fields.cnh,nr10:fields.nr10,nr35:fields.nr35,
-    nr12_cesto:fields.nr12cesto,nr12_moto:fields.nr12moto,nr12_cesta:fields.nr12cesta
+    nr12_cesto:fields.nr12cesto,nr12_moto:fields.nr12moto,nr12_cesta:fields.nr12cesta,nr12_martelete:fields.nr12martelete
   };
   if(editingColabId){
     /* EDIT MODE */
@@ -2513,7 +2521,7 @@ async function salvarColab(){
     state.colaboradores.push(Object.assign({id:id,ultimaInspecao:null},fields));
   }
   document.querySelector('#modal-colab .modal-title').textContent='\ud83d\udc77 Novo Colaborador';
-  ['mc-nome','mc-mat','mc-cargo','mc-contrato','mc-aso','mc-cnh','mc-nr10','mc-nr35','mc-nr12cesto','mc-nr12moto','mc-nr12cesta'].forEach(function(id){document.getElementById(id).value='';});
+  ['mc-nome','mc-mat','mc-cargo','mc-contrato','mc-aso','mc-cnh','mc-nr10','mc-nr35','mc-nr12cesto','mc-nr12moto','mc-nr12cesta','mc-nr12martelete'].forEach(function(id){document.getElementById(id).value='';});
   closeModal('modal-colab');
   refreshColabList();
   renderColabSelect();
