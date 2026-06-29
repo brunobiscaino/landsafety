@@ -280,7 +280,13 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   <div class="grid-2">
     <div class="card"><div class="card-title">Top desvios frequentes</div><div id="chart-desvios"><div class="empty-state"><div class="ei">&#128200;</div><p>Realize inspe&ccedil;&otilde;es para ver os dados</p></div></div></div>
     <div class="card"><div class="card-title">Ranking &middot; Colaboradores com mais NC</div><div id="ranking-colab"><div class="empty-state"><div class="ei">&#128119;</div><p>Sem dados de NC por colaborador ainda</p></div></div></div>
-    <div class="card"><div class="card-title">&#127942; Ranking &middot; Inspetores mais ativos</div><div id="ranking-inspetores"><div class="empty-state"><div class="ei">&#128202;</div><p>Realize inspe&ccedil;&otilde;es para ver o ranking</p></div></div></div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">&#127942; Ranking &middot; Inspetores &middot; Meta Anual</div>
+        <div id="meta-mes-label" style="font-size:10px;color:var(--sage);letter-spacing:1px;text-transform:uppercase"></div>
+      </div>
+      <div id="ranking-inspetores"><div class="empty-state"><div class="ei">&#128202;</div><p>Realize inspe&ccedil;&otilde;es para ver o ranking</p></div></div>
+    </div>
   </div>
   <div class="card" style="margin-bottom:16px">
     <div class="card-title">Ciclo de inspe&ccedil;&atilde;o &middot; 30 dias</div>
@@ -721,6 +727,16 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
       <label class="form-label">&#128274; Senha <span style="font-size:10px;color:var(--sage);letter-spacing:1px">&mdash; DISPON&Iacute;VEL AP&Oacute;S ATIVAR SUPABASE AUTH</span></label>
       <input class="form-input" id="mu-senha" placeholder="Senha (em breve)" disabled style="opacity:.4;cursor:not-allowed">
     </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">&#127942; Meta anual de inspe&ccedil;&otilde;es</label>
+      <input class="form-input" type="number" id="mu-meta" placeholder="Ex: 48 (4 por m&ecirc;s)" min="0" max="500">
+      <div style="font-size:10px;color:var(--sage);opacity:.7;margin-top:4px">Quantas inspe&ccedil;&otilde;es este inspetor deve realizar no ano</div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">&#127942; Meta anual de inspe&ccedil;&otilde;es</label>
+      <input class="form-input" type="number" id="mu-meta" placeholder="Ex: 48 (4 por m&ecirc;s)" min="0" max="500">
+      <div style="font-size:10px;color:var(--sage);opacity:.7;margin-top:4px;letter-spacing:.5px">Defina quantas inspe&ccedil;&otilde;es este inspetor deve realizar no ano</div>
+    </div>
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarUsuario()">SALVAR</button>
       <button class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
@@ -988,7 +1004,7 @@ async function loadPerfis(){
 async function loadUsuarios(){
   const rows=await sbSelect('usuarios','select=id,nome,matricula,perfil_id&order=id');
   if(rows&&rows.length>0){
-    state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id};});
+    state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0};});
     state.selectedAgenteIds=[state.usuarios[0].id];
     userIdSeq=-1;
   }
@@ -1427,69 +1443,46 @@ function updateProgress(){
 /* ============ FINALIZAR / SALVAR ============ */
 function finalizarChecklist(){
   const all=[].concat(CHECKLIST.GV,CHECKLIST.G,CHECKLIST.L);
-  /* M2 - todos os itens são obrigatórios */
+  /* M2 - todos os itens sao obrigatorios */
   const naoRespondidos=all.filter(function(i){return !state.checklist[i.code];});
   if(naoRespondidos.length>0){
     const primeiroNR=naoRespondidos[0];
     const section=CHECKLIST.GV.find(function(i){return i.code===primeiroNR.code;})?'GV':
                   CHECKLIST.G.find(function(i){return i.code===primeiroNR.code;})?'G':'L';
-    if(confirm('&#9888; '+naoRespondidos.length+' item(ns) sem resposta.\n\nTodos os itens s\u00e3o obrigat\u00f3rios (C, NC ou NA).\n\nIr para o primeiro item n\u00e3o respondido ('+primeiroNR.code+')?')){
-      switchSection(section);
-      const area=document.getElementById('cl-scroll-area');
-      if(area){
-        setTimeout(function(){
-          const el=document.querySelector('[data-code="'+primeiroNR.code+'"]');
-          if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
-        },100);
-      }
+    if(confirm(naoRespondidos.length+' item(ns) sem resposta. Todos os itens sao obrigatorios (C, NC ou NA).\n\nIr para o primeiro item nao respondido ('+primeiroNR.code+')?')){
+      showSection(section);
+      setTimeout(function(){
+        const el=document.getElementById('row-'+primeiroNR.code);
+        if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+      },150);
     }
     return;
   }
-  const ncgv=CHECKLIST.GV.filter(function(i){return state.checklist[i.code]==='NC';}).length;
-  const ncg=CHECKLIST.G.filter(function(i){return state.checklist[i.code]==='NC';}).length;
-  const ncl=CHECKLIST.L.filter(function(i){return state.checklist[i.code]==='NC';}).length;
-  const nc=ncgv+ncg+ncl;
-  const answC=all.filter(function(i){return state.checklist[i.code]==='C'||state.checklist[i.code]==='NA';}).length;
-  const isp=answered>0?Math.round((answC/answered)*100):0;
-  const now=new Date();const inicio=new Date(state.currentInsp.dataInicio);
-  const duracaoMin=Math.round((now-inicio)/60000);
-  const nai=state.currentInsp.colaboradores.length;
-  const nae=state.currentInsp.agentes.length;
-  const hhi=(nai*nae*(duracaoMin/60)).toFixed(1);
+  const answered=all.filter(function(i){return state.checklist[i.code];}).length;
+  const nc=all.filter(function(i){return state.checklist[i.code]==='NC';});
+  const ncgv=nc.filter(function(i){return i.section==='GV'||CHECKLIST.GV.find(function(x){return x.code===i.code;});}).length;
+  const ncg=nc.filter(function(i){return i.section==='G'||CHECKLIST.G.find(function(x){return x.code===i.code;});}).length;
+  const ncl=nc.filter(function(i){return i.section==='L'||CHECKLIST.L.find(function(x){return x.code===i.code;});}).length;
+  const na=all.filter(function(i){return state.checklist[i.code]==='NA';}).length;
+  const total=answered-na;
+  const isp=total>0?Math.round(((total-nc.length)/total)*100):100;
+  const cols=state.currentInsp.colaboradores||[];
+  const agentes=state.currentInsp.agentes||[];
+  const hhi=cols.length*agentes.length*(state.currentInsp.duracao||1);
+  state._tempResult={ncgv:ncgv,ncg:ncg,ncl:ncl,nc:nc.length,na:na,isp:isp,hhi:hhi};
   const ispColor=isp>=90?'#5ebc8a':isp>=70?'#c9955a':'#e07c74';
-  const gpsTxt=state.currentInsp.gps?state.currentInsp.gps.lat.toFixed(5)+', '+state.currentInsp.gps.lng.toFixed(5):'n\u00e3o capturada';
-  let html='';
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
-  html+='<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+isp+'%</div><div class="kpi-lbl">ISP</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val red">'+ncgv+'</div><div class="kpi-lbl">NC Grav&iacute;ssimas</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val warn">'+ncg+'</div><div class="kpi-lbl">NC Graves</div></div>';
-  html+='</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
-  html+='<div class="kpi-card"><div class="kpi-val green">'+ncl+'</div><div class="kpi-lbl">NC Leves</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val">'+answered+'</div><div class="kpi-lbl">Itens avaliados</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val">'+hhi+'</div><div class="kpi-lbl">HHI (H/H Inspe&ccedil;&atilde;o)</div></div>';
-  html+='</div><div class="card" style="padding:14px;margin-bottom:12px">';
-  html+='<div class="card-title">CENA &middot; '+state.currentInsp.atividade+'</div>';
-  html+='<div style="font-size:12px;color:var(--mist)">Local: '+(state.currentInsp.local||'&mdash;')+' &middot; GPS: '+gpsTxt+'</div>';
-  html+='<div style="font-size:12px;color:var(--mist);margin-top:4px">Dura&ccedil;&atilde;o: '+duracaoMin+' min &middot; Colaboradores: '+nai+' &middot; Agentes: '+nae+'</div></div>';
-  if(nc>0){
-    html+='<div class="card" style="padding:14px"><div class="card-title" style="color:#e07c74">&#9888; '+nc+' n\u00e3o conformidades</div>';
-    html+=state.currentInsp.ncDetails.map(function(d){
-      const cols=(d.colaboradores&&d.colaboradores.length)?d.colaboradores.join(', '):'\u2014';
-      return '<div style="padding:8px 0;border-bottom:1px solid rgba(195,204,154,.06)"><span class="badge badge-'+d.section.toLowerCase()+'" style="margin-right:8px">'+d.section+'</span><strong style="color:var(--white);font-size:12px">'+d.code+'</strong><div style="font-size:12px;color:var(--mist);margin-top:2px">'+d.desc.substring(0,80)+'...</div><div style="font-size:11px;color:var(--sage);margin-top:2px">Colaborador(es): '+cols+(d.foto?' &middot; \u{1F4F7} foto anexada':'')+'</div></div>';
-    }).join('');
-    html+='</div>';
-  }else{
-    html+='<div style="text-align:center;color:#5ebc8a;font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;padding:16px">&#10003; NENHUMA NC REGISTRADA</div>';
-  }
-  document.getElementById('resultado-body').innerHTML=html;
-  state._tempResult={ncgv:ncgv,ncg:ncg,ncl:ncl,nc:nc,answC:answC,isp:isp,hhi:hhi,duracaoMin:duracaoMin,nai:nai,nae:nae,answered:answered};
+  const body=document.getElementById('resultado-body');
+  body.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">'+
+    '<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+isp+'%</div><div class="kpi-lbl">ISP</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val">'+answered+'</div><div class="kpi-lbl">Itens respondidos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val red">'+ncgv+'</div><div class="kpi-lbl">NC Grav\u00edssimas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val warn">'+ncg+'</div><div class="kpi-lbl">NC Graves</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val green">'+ncl+'</div><div class="kpi-lbl">NC Leves</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val">'+na+'</div><div class="kpi-lbl">N\u00e3o Aplic\u00e1veis</div></div>'+
+    '</div>';
   openModal('modal-resultado');
 }
 
-let _salvandoInspecao=false;
-let _loggedUserId=null;
-
-/* ============ LOGIN / AUTH ============ */
 function fazerLogin(){
   const mat=document.getElementById('login-mat').value.trim();
   const senha=document.getElementById('login-senha').value;
@@ -1989,25 +1982,52 @@ function refreshDashboard(){
     }).join('');
   }
   refreshECResumo();
-  /* M3 - ranking de inspetores */
+  /* M3 - ranking de inspetores com meta */
   const rankInspEl=document.getElementById('ranking-inspetores');
+  const metaMesLabel=document.getElementById('meta-mes-label');
   if(rankInspEl){
-    const inspCount={};
+    const now=new Date();
+    const mesAtual=now.getMonth();const anoAtual=now.getFullYear();
+    const mesNome=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mesAtual];
+    if(metaMesLabel)metaMesLabel.textContent=mesNome+' \u00b7 '+anoAtual;
+    const inspAno={};const inspMes={};
     state.inspecoes.forEach(function(i){
+      const d=new Date(i.dataFim||i.dataInicio);
       (i.agentes||[]).forEach(function(a){
         const nome=a.nome||a;
-        inspCount[nome]=(inspCount[nome]||0)+1;
+        if(d.getFullYear()===anoAtual)inspAno[nome]=(inspAno[nome]||0)+1;
+        if(d.getFullYear()===anoAtual&&d.getMonth()===mesAtual)inspMes[nome]=(inspMes[nome]||0)+1;
       });
     });
-    const sorted=Object.entries(inspCount).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-    if(sorted.length===0){
-      rankInspEl.innerHTML='<div class="empty-state"><div class="ei">&#128202;</div><p>Realize inspe\u00e7\u00f5es para ver o ranking</p></div>';
+    const inspetores=state.usuarios.filter(function(u){
+      const p=PERFIS.find(function(p){return p.id===u.perfilId;});
+      return p&&(p.permissoes.indexOf('nova-inspecao')>=0||p.permissoes.indexOf('todos')>=0);
+    });
+    const lista=inspetores.map(function(u){
+      return {nome:u.nome,ano:inspAno[u.nome]||0,mes:inspMes[u.nome]||0,meta:u.metaAnual||0};
+    }).filter(function(x){return x.ano>0||x.meta>0;}).sort(function(a,b){return b.ano-a.ano;});
+    if(lista.length===0){
+      rankInspEl.innerHTML='<div class="empty-state"><div class="ei">&#128202;</div><p>Nenhum inspetor com meta ou inspec\u00f5es registradas</p></div>';
     }else{
-      const maxI=sorted[0][1];
-      rankInspEl.innerHTML=sorted.map(function(e,idx){
-        const medals=['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
-        const pos=medals[idx]||'<span style="font-size:12px;color:var(--mist)">'+(idx+1)+'</span>';
-        return '<div class="rank-row"><div class="rank-pos">'+pos+'</div><div class="rank-name">'+e[0]+'</div><div class="rank-track"><div class="rank-fill" style="width:'+Math.round(e[1]/maxI*100)+'%;background:var(--sage)"></div></div><div class="rank-val">'+e[1]+'</div></div>';
+      const medals=['&#127947;','&#127948;','&#127949;'];
+      rankInspEl.innerHTML=lista.map(function(e,i){
+        const metaAnual=e.meta||0;
+        const metaMes=metaAnual>0?Math.ceil(metaAnual/12):0;
+        const pctAnual=metaAnual>0?Math.min(100,Math.round(e.ano/metaAnual*100)):null;
+        const pctMes=metaMes>0?Math.min(100,Math.round(e.mes/metaMes*100)):null;
+        const bar=pctAnual===null?'var(--sage)':pctAnual>=100?'#5ebc8a':pctAnual>=70?'#c9955a':'#e07c74';
+        const pos=medals[i]||'<span style="font-size:12px;color:var(--mist)">'+(i+1)+'</span>';
+        let h='<div class="rank-row" style="flex-wrap:wrap;row-gap:4px">';
+        h+='<div class="rank-pos">'+pos+'</div><div class="rank-name">'+e.nome+'</div>';
+        h+='<div style="display:flex;gap:10px;align-items:center;margin-left:auto">';
+        if(metaMes>0)h+='<span style="font-size:10px;color:var(--mist)">M\u00eas: <strong style="color:'+(pctMes>=100?'#5ebc8a':pctMes>=70?'#c9955a':'#e07c74')+'">'+e.mes+'/'+metaMes+'</strong></span>';
+        if(metaAnual>0)h+='<span style="font-size:10px;color:var(--mist)">Ano: <strong style="color:'+bar+'">'+e.ano+'/'+metaAnual+'</strong></span>';
+        else h+='<span style="font-size:11px;color:var(--white);font-weight:700">'+e.ano+' insp.</span>';
+        h+='</div><div style="width:100%;padding-left:44px">';
+        h+='<div class="rank-track"><div class="rank-fill" style="width:'+(pctAnual!==null?pctAnual:Math.min(100,e.ano*10))+'%;background:'+bar+'"></div></div>';
+        if(pctAnual!==null)h+='<div style="font-size:10px;color:'+bar+';margin-top:2px">'+pctAnual+'% da meta anual</div>';
+        h+='</div></div>';
+        return h;
       }).join('');
     }
   }
@@ -2649,6 +2669,7 @@ function openEditUsuario(id){
   document.getElementById('mu-id').value=id;
   document.getElementById('mu-nome').value=u.nome||'';
   document.getElementById('mu-mat').value=u.mat||'';
+  document.getElementById('mu-meta').value=u.metaAnual||0;
   const sel=document.getElementById('mu-perfil');
   renderPerfilOptions();
   if(u.perfilId)sel.value=u.perfilId;
@@ -2679,14 +2700,17 @@ async function salvarUsuario(){
     const id=parseInt(editId);
     const u=state.usuarios.find(function(u){return u.id===id;});
     if(u){u.nome=nome;u.mat=mat;u.perfilId=perfilId;}
-    if(id>0)await sbUpdate('usuarios',id,{nome:nome,matricula:mat||null,perfil_id:perfilId});
+    const metaVal=parseInt(document.getElementById('mu-meta').value)||0;
+    if(id>0)await sbUpdate('usuarios',id,{nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaVal});
+    const u2=state.usuarios.find(function(u){return u.id===id;});if(u2)u2.metaAnual=metaVal;
     updateSyncIndicator();
   }else{
     /* INSERT MODE */
-    const row=await sbInsert('usuarios',{nome:nome,matricula:mat||null,perfil_id:perfilId});
+    const metaIns=parseInt(document.getElementById('mu-meta').value)||0;
+    const row=await sbInsert('usuarios',{nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaIns});
     updateSyncIndicator();
     const id=(row&&row[0])?row[0].id:userIdSeq--;
-    state.usuarios.push({id:id,nome:nome,mat:mat,perfilId:perfilId});
+    state.usuarios.push({id:id,nome:nome,mat:mat,perfilId:perfilId,metaAnual:metaIns});
   }
   document.getElementById('mu-id').value='';
   document.getElementById('mu-nome').value='';
