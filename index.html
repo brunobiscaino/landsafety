@@ -1528,138 +1528,143 @@ function fazerLogout(){
 let _inspOfflineQueue=[];
 
 async function salvarInspecao(){
-  /* M3 - evitar duplo clique */
   if(_salvandoInspecao)return;
   _salvandoInspecao=true;
   const btnSalvar=document.querySelector('#modal-resultado .btn-primary');
   if(btnSalvar){btnSalvar.disabled=true;btnSalvar.textContent='SALVANDO...';}
+
+  /* Sempre fechar modal e ir ao dashboard no final, com ou sem erro */
+  const finalizar=function(msg,tipo){
+    _salvandoInspecao=false;
+    if(btnSalvar){btnSalvar.disabled=false;btnSalvar.textContent='SALVAR INSPE\u00c7\u00c3O';}
+    closeModal('modal-resultado');
+    inspGPS=null;
+    state.selectedColabIds=[];
+    const gpsDisp=document.getElementById('gps-display');
+    if(gpsDisp){gpsDisp.textContent='Coordenada n\u00e3o capturada';gpsDisp.style.color='var(--mist)';gpsDisp.style.opacity='.6';}
+    updateBadges();updateAlertBadge();
+    showView('dashboard');
+    setTimeout(function(){if(msg)showToast(msg,tipo||'ok');},300);
+  };
+
   try{
-  const r=state._tempResult;const now=new Date();
-  const ci=state.currentInsp;
-  const colabIds=ci.colaboradores.map(function(c){return c.id;});
-  const colabNomes=ci.colaboradores.map(function(c){return c.nome;});
-  const agenteNomes=ci.agentes.map(function(a){return a.nome;});
+    const r=state._tempResult;
+    if(!r){finalizar('\u274c Resultado da inspe\u00e7\u00e3o n\u00e3o encontrado.','error');return;}
+    const now=new Date();
+    const ci=state.currentInsp;
+    if(!ci){finalizar('\u274c Dados da inspe\u00e7\u00e3o n\u00e3o encontrados.','error');return;}
 
-  /* ── Payload para o banco (mapeado pro schema real) ── */
-  const dbInsp={
-    data:now.toISOString().substring(0,10),
-    hora:now.toTimeString().substring(0,8),
-    inspetor_nome:agenteNomes.join(', ')||'',
-    colab_id:colabIds.length===1?colabIds[0]:null,
-    colab_nome:colabNomes.join(', ')||'',
-    empresa:EMPRESA,
-    contrato:ci.colaboradores[0]?ci.colaboradores[0].contrato||'PLPT TERESINA':'PLPT TERESINA',
-    local_insp:ci.local||null,
-    atividade:ci.atividade||null,
-    total_ncs:r.nc,
-    tolerancia_zero:r.ncgv>0,
-    status:'concluida',
-    observacoes:null,
-    /* colunas adicionadas via ALTER TABLE */
-    sup_cena:ci.supCena||null,
-    agentes:agenteNomes,
-    colab_ids:colabIds,
-    colab_nomes:colabNomes,
-    ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,
-    isp:r.isp,hhi:r.hhi,
-    gps_lat:ci.gps?ci.gps.lat:null,
-    gps_lng:ci.gps?ci.gps.lng:null,
-    data_fim:now.toISOString()
-  };
+    const colabIds=ci.colaboradores.map(function(c){return c.id;});
+    const colabNomes=ci.colaboradores.map(function(c){return c.nome;});
+    const agenteNomes=ci.agentes.map(function(a){return a.nome;});
 
-  /* ── Inserir inspeção ── */
-  let dbId=null;
-  const rowInsp=await sbInsert('inspecoes',dbInsp);
-  updateSyncIndicator();
-  if(rowInsp&&rowInsp[0])dbId=rowInsp[0].id;
-
-  /* ── Objeto local ── */
-  const insp={
-    id:dbId||ci.id,empresa:EMPRESA,
-    atividade:ci.atividade,base:ci.base,local:ci.local,
-    supCena:ci.supCena,gps:ci.gps,
-    dataInicio:ci.dataInicio,ncDetails:ci.ncDetails,
-    colaboradores:ci.colaboradores,agentes:ci.agentes,
-    num:state.inspecoes.length+1,dataFim:now.toISOString(),
-    ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,nc:r.nc,isp:r.isp,hhi:r.hhi,
-    status:'Conclu\u00edda',checklist:Object.assign({},state.checklist)
-  };
-  state.inspecoes.push(insp);
-
-  /* ── Inserir cada NC no banco ── */
-  const ncPayloads=ci.ncDetails.map(function(d){
-    return {
-      inspecao_id:insp.id,
-      categoria:d.section,
-      pergunta:d.desc,
-      desvio:d.obs||null,
-      tolerancia_zero:d.section==='GV',
-      /* colunas extras */
-      codigo:d.code,
-      secao:d.section,
-      obs:d.obs||null,
-      acao:d.acao||null,
-      resp:d.resp||null,
-      prazo:d.prazo||null,
-      colab_nomes:d.colaboradores||[],
-      foto_nc:d.foto?{dataURL:d.foto.dataURL?d.foto.dataURL.substring(0,500000):null,timestamp:d.foto.timestamp,coords:d.foto.coords}:null,
-      status_nc:'Aberta'
+    /* Objeto local - criado ANTES do Supabase para garantir exibi\u00e7\u00e3o imediata */
+    const insp={
+      id:ci.id,empresa:EMPRESA,
+      atividade:ci.atividade,base:ci.base,local:ci.local,
+      supCena:ci.supCena,gps:ci.gps,
+      dataInicio:ci.dataInicio,ncDetails:ci.ncDetails,
+      colaboradores:ci.colaboradores,agentes:ci.agentes,
+      num:state.inspecoes.length+1,dataFim:now.toISOString(),
+      ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,nc:r.nc,isp:r.isp,hhi:r.hhi,
+      status:'Conclu\u00edda',checklist:Object.assign({},state.checklist)
     };
-  });
-  if(ncPayloads.length>0){
-    const rowsNC=await sbInsert('nao_conformidades',ncPayloads);
-    updateSyncIndicator();
-    /* Mapear ids do banco para state.ncs */
-    ci.ncDetails.forEach(function(d,idx){
-      const dbNC=rowsNC&&rowsNC[idx]?rowsNC[idx]:null;
+    state.inspecoes.push(insp);
+
+    /* NCs locais imediatamente */
+    ci.ncDetails.forEach(function(d){
       state.ncs.push({
         code:d.code,desc:d.desc,section:d.section,obs:d.obs,acao:d.acao,
         resp:d.resp,prazo:d.prazo,foto:d.foto,colaboradores:d.colaboradores,
         inspId:insp.id,inspNum:insp.num,data:insp.dataFim,
-        status:'Aberta',dbId:dbNC?dbNC.id:null
+        status:'Aberta',dbId:null
       });
     });
-  }
 
-  /* ── Atualizar ultima_insp_data dos colaboradores ── */
-  ci.colaboradores.forEach(function(col){
-    const reg=state.colaboradores.find(function(c){return c.id===col.id;});
-    if(reg){
-      reg.ultimaInspecao=insp.dataFim;
-      if(reg.id&&!(typeof reg.id==='number'&&reg.id<0))
-        sbUpdate('colaboradores',reg.id,{ultima_insp_data:now.toISOString().substring(0,10)});
-    }
-  });
+    /* Atualizar ultima_insp_data local */
+    ci.colaboradores.forEach(function(col){
+      const reg=state.colaboradores.find(function(c){return c.id===col.id;});
+      if(reg)reg.ultimaInspecao=insp.dataFim;
+    });
 
-  updateBadges();
-  updateAlertBadge();
-  closeModal('modal-resultado');
-  inspGPS=null;state.selectedColabIds=[];
-  document.getElementById('gps-display').textContent='Coordenada n\u00e3o capturada';
-  document.getElementById('gps-display').style.color='var(--mist)';
-  document.getElementById('gps-display').style.opacity='.6';
+    /* Fechar modal e ir ao dashboard IMEDIATAMENTE */
+    finalizar(null,null);
 
-  /* M3 - feedback de envio */
-  if(dbId){
-    showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' enviada e salva no Supabase!','ok');
-  }else{
-    _inspOfflineQueue.push({insp:insp,dbInsp:dbInsp,ncPayloads:ncPayloads});
-    showToast('\u26a0\ufe0f Sem internet \u2014 inspe\u00e7\u00e3o salva localmente. Ser\u00e1 enviada quando a conex\u00e3o for restabelecida.','warn');
-    scheduleOfflineSync();
-  }
+    /* Persistir no Supabase em background */
+    const dbInsp={
+      data:now.toISOString().substring(0,10),
+      hora:now.toTimeString().substring(0,8),
+      inspetor_nome:agenteNomes.join(', ')||'',
+      colab_id:colabIds.length===1?colabIds[0]:null,
+      colab_nome:colabNomes.join(', ')||'',
+      empresa:EMPRESA,
+      contrato:ci.colaboradores[0]?ci.colaboradores[0].contrato||'PLPT TERESINA':'PLPT TERESINA',
+      local_insp:ci.local||null,
+      atividade:ci.atividade||null,
+      total_ncs:r.nc,
+      tolerancia_zero:r.ncgv>0,
+      status:'concluida',
+      observacoes:null,
+      sup_cena:ci.supCena||null,
+      agentes:agenteNomes,
+      colab_ids:colabIds,
+      colab_nomes:colabNomes,
+      ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,
+      isp:r.isp,hhi:r.hhi,
+      gps_lat:ci.gps?ci.gps.lat:null,
+      gps_lng:ci.gps?ci.gps.lng:null,
+      data_fim:now.toISOString()
+    };
+
+    sbInsert('inspecoes',dbInsp).then(function(rowInsp){
+      if(rowInsp&&rowInsp[0]){
+        insp.id=rowInsp[0].id;
+        updateSyncIndicator();
+        showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' salva no Supabase!','ok');
+        /* Inserir NCs com id real da inspe\u00e7\u00e3o */
+        const ncPayloads=ci.ncDetails.map(function(d){
+          return {
+            inspecao_id:insp.id,
+            categoria:d.section,
+            pergunta:d.desc,
+            desvio:d.obs||null,
+            tolerancia_zero:d.section==='GV',
+            codigo:d.code,secao:d.section,
+            obs:d.obs||null,acao:d.acao||null,resp:d.resp||null,prazo:d.prazo||null,
+            colab_nomes:d.colaboradores||[],
+            foto_nc:d.foto?{dataURL:d.foto.dataURL?d.foto.dataURL.substring(0,400000):null,timestamp:d.foto.timestamp,coords:d.foto.coords}:null,
+            status_nc:'Aberta'
+          };
+        });
+        if(ncPayloads.length>0){
+          sbInsert('nao_conformidades',ncPayloads).then(function(rowsNC){
+            if(rowsNC){
+              /* atualizar dbId das NCs locais */
+              const ncsDestaInsp=state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);});
+              ncsDestaInsp.forEach(function(n,i){if(rowsNC[i])n.dbId=rowsNC[i].id;});
+            }
+            /* atualizar colaboradores */
+            ci.colaboradores.forEach(function(col){
+              const reg=state.colaboradores.find(function(c){return c.id===col.id;});
+              if(reg&&reg.id&&!(typeof reg.id==='number'&&reg.id<0))
+                sbUpdate('colaboradores',reg.id,{ultima_insp_data:now.toISOString().substring(0,10)});
+            });
+          });
+        }
+      }else{
+        showToast('\u26a0\ufe0f Inspe\u00e7\u00e3o salva localmente (Supabase indispon\u00edvel)','warn');
+        _inspOfflineQueue.push({insp:insp,dbInsp:dbInsp,ncPayloads:[]});
+        scheduleOfflineSync();
+      }
+    }).catch(function(err){
+      console.error('Supabase insert error:',err);
+      showToast('\u26a0\ufe0f Salvo localmente \u2014 ser\u00e1 sincronizado em breve','warn');
+    });
 
   }catch(err){
-    console.error('Erro ao salvar inspe\u00e7\u00e3o:',err);
-    showToast('\u274c Erro: '+err.message,'error');
-  }finally{
-    _salvandoInspecao=false;
-    if(btnSalvar){btnSalvar.disabled=false;btnSalvar.textContent='SALVAR INSPE\u00c7\u00c3O';}
+    console.error('Erro cr\u00edtico:',err);
+    finalizar('\u274c Erro inesperado: '+err.message,'error');
   }
-  closeModal('modal-resultado');
-  inspGPS=null;state.selectedColabIds=[];
-  const gpsDisp=document.getElementById('gps-display');
-  if(gpsDisp){gpsDisp.textContent='Coordenada n\u00e3o capturada';gpsDisp.style.color='var(--mist)';gpsDisp.style.opacity='.6';}
-  showView('dashboard');
 }
 
 function showToast(msg,type){
@@ -1746,8 +1751,13 @@ function docBadgeHTML(d){
   return '<span class="badge '+cls+'" title="'+d.label+': '+d.venc.toLocaleDateString('pt-BR')+'">'+d.label+' &middot; '+txt+'</span>';
 }
 function getColabCicloStatus(c){
-  if(!c.ultimaInspecao)return{label:'Nunca inspecionado',cls:'badge-na',proxima:null,dias:null};
-  const ultima=new Date(c.ultimaInspecao);
+  /* Ignorar ultima_insp_data do banco se não temos inspeções carregadas no sistema atual */
+  const temInspLocal=state.inspecoes.some(function(i){
+    return (i.colaboradores||[]).some(function(col){return String(col.id)===String(c.id);});
+  });
+  const ultimaInsp=temInspLocal?c.ultimaInspecao:null;
+  if(!ultimaInsp)return{label:'Nunca inspecionado',cls:'badge-na',proxima:null,dias:null};
+  const ultima=new Date(ultimaInsp);
   const proxima=new Date(ultima);proxima.setDate(proxima.getDate()+30);
   const hoje=new Date();
   const diffDias=Math.ceil((proxima-hoje)/(1000*60*60*24));
@@ -2471,6 +2481,7 @@ function refreshColabList(){
   state.ncs.forEach(function(n){(n.colaboradores||[]).forEach(function(name){ranking[name]=(ranking[name]||0)+1;});});
   tbody.innerHTML=list.map(function(c){
     const ciclo=getColabCicloStatus(c);
+    const temInspLocal=state.inspecoes.some(function(i){return (i.colaboradores||[]).some(function(col){return String(col.id)===String(c.id);});});
     const ncCount=ranking[c.nome]||0;
     const docsAlerta=getDocsAlerta(c);
     const docsBadges=docsAlerta.length>0?docsAlerta.map(docBadgeHTML).join(' '):'<span class="badge badge-ok">OK</span>';
