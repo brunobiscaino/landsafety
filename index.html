@@ -1345,7 +1345,10 @@ function processPhotoFile(file,onDone,previewElId){
     const img=new Image();
     img.onload=function(){
       const canvas=document.createElement('canvas');
-      canvas.width=img.width;canvas.height=img.height;
+      /* Comprimir: max 1024px para reduzir base64 no banco */
+      const MAX_W=1024;
+      const scale=img.width>MAX_W?MAX_W/img.width:1;
+      canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
       const ctx=canvas.getContext('2d');
       ctx.drawImage(img,0,0);
       const now=new Date();
@@ -1359,7 +1362,7 @@ function processPhotoFile(file,onDone,previewElId){
         ctx.font=fontSize+'px Barlow, sans-serif';
         ctx.textBaseline='middle';
         ctx.fillText(dateStr+'   |   '+coordStr,14,canvas.height-barH/2);
-        const dataURL=canvas.toDataURL('image/jpeg',0.85);
+        const dataURL=canvas.toDataURL('image/jpeg',0.65);
         const foto={dataURL:dataURL,timestamp:now.toISOString(),coords:coordStr};
         preview.innerHTML='<img src="'+dataURL+'" style="max-width:100%;max-height:160px;border:1px solid var(--card-border)">';
         onDone(foto);
@@ -1599,7 +1602,7 @@ async function salvarInspecao(){
       resp:d.resp||null,
       prazo:d.prazo||null,
       colab_nomes:d.colaboradores||[],
-      foto_nc:d.foto?{dataURL:d.foto.dataURL,timestamp:d.foto.timestamp,coords:d.foto.coords}:null,
+      foto_nc:d.foto?{dataURL:d.foto.dataURL?d.foto.dataURL.substring(0,500000):null,timestamp:d.foto.timestamp,coords:d.foto.coords}:null,
       status_nc:'Aberta'
     };
   });
