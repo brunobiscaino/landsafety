@@ -737,8 +737,9 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
       <select class="form-select" id="mu-perfil"></select>
     </div>
     <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label">&#128274; Senha <span style="font-size:10px;color:var(--sage);letter-spacing:1px">&mdash; DISPON&Iacute;VEL AP&Oacute;S ATIVAR SUPABASE AUTH</span></label>
-      <input class="form-input" id="mu-senha" placeholder="Senha (em breve)" disabled style="opacity:.4;cursor:not-allowed">
+      <label class="form-label">&#128274; Senha</label>
+      <input class="form-input" type="password" id="mu-senha" placeholder="Deixe em branco para manter a atual" autocomplete="new-password">
+      <div style="font-size:10px;color:var(--sage);opacity:.7;margin-top:4px">Senha padrão: matrícula do usuário. Deixe em branco ao editar para não alterar.</div>
     </div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px">
@@ -1008,7 +1009,7 @@ async function loadPerfis(){
 async function loadUsuarios(){
   const rows=await sbSelect('usuarios','select=id,nome,matricula,perfil_id&order=id');
   if(rows&&rows.length>0){
-    state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0,metaMensal:r.meta_mensal||0,metaSemanal:r.meta_semanal||0};});
+    state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0,metaMensal:r.meta_mensal||0,metaSemanal:r.meta_semanal||0,senha:r.senha||null};});
     state.selectedAgenteIds=[state.usuarios[0].id];
     userIdSeq=-1;
   }
@@ -2694,7 +2695,8 @@ function refreshUsuariosList(){
     const isAdmin=(u.id===1);
     const editBtn='<button class="btn btn-outline btn-sm" onclick="openEditUsuario('+u.id+')">&#9998; Editar</button>';
     const delBtn=isAdmin?'':'<button class="btn btn-outline btn-sm" onclick="deleteUsuario('+u.id+')">Excluir</button>';
-    return '<tr><td style="color:var(--white);font-weight:700">'+u.nome+'</td><td>'+(u.mat||'\u2014')+'</td><td><span class="badge badge-na">'+(perfil?perfil.nome:'')+'</span></td><td style="text-align:right;white-space:nowrap">'+editBtn+' '+delBtn+'</td></tr>';
+    const senhaStatus=u.senha&&u.senha!==u.mat?'<span class="badge badge-ok">&#128274; Senha OK</span>':'<span class="badge badge-warn">&#128273; Sem senha</span>';
+    return '<tr><td style="color:var(--white);font-weight:700">'+u.nome+'</td><td>'+(u.mat||'\u2014')+'</td><td><span class="badge badge-na">'+(perfil?perfil.nome:'')+'</span></td><td>'+senhaStatus+'</td><td style="text-align:right;white-space:nowrap">'+editBtn+' '+delBtn+'</td></tr>';
   }).join('');
 }
 function openEditUsuario(id){
@@ -2704,6 +2706,7 @@ function openEditUsuario(id){
   document.getElementById('mu-id').value=id;
   document.getElementById('mu-nome').value=u.nome||'';
   document.getElementById('mu-mat').value=u.mat||'';
+  document.getElementById('mu-senha').value='';
   const muMetaRef=document.getElementById('mu-meta');if(muMetaRef)muMetaRef.value=u.metaAnual||0;
   const sel=document.getElementById('mu-perfil');
   renderPerfilOptions();
@@ -2736,16 +2739,22 @@ async function salvarUsuario(){
     const u=state.usuarios.find(function(u){return u.id===id;});
     if(u){u.nome=nome;u.mat=mat;u.perfilId=perfilId;}
     const muMetaEl=document.getElementById('mu-meta');const metaVal=muMetaEl?parseInt(muMetaEl.value)||0:0;
-    if(id>0)await sbUpdate('usuarios',id,{nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaVal});
-    const u2=state.usuarios.find(function(u){return u.id===id;});if(u2)u2.metaAnual=metaVal;
+    const senhaEdit=document.getElementById('mu-senha').value.trim();
+    const payloadEdit={nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaVal};
+    if(senhaEdit)payloadEdit.senha=senhaEdit;
+    if(id>0)await sbUpdate('usuarios',id,payloadEdit);
+    const u2=state.usuarios.find(function(u){return u.id===id;});
+    if(u2){u2.metaAnual=metaVal;if(senhaEdit)u2.senha=senhaEdit;}
     updateSyncIndicator();
   }else{
     /* INSERT MODE */
     const muMetaElI=document.getElementById('mu-meta');const metaIns=muMetaElI?parseInt(muMetaElI.value)||0:0;
-    const row=await sbInsert('usuarios',{nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaIns});
+    const senhaIns=document.getElementById('mu-senha').value.trim()||mat;
+    const payloadIns={nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaIns,senha:senhaIns};
+    const row=await sbInsert('usuarios',payloadIns);
     updateSyncIndicator();
     const id=(row&&row[0])?row[0].id:userIdSeq--;
-    state.usuarios.push({id:id,nome:nome,mat:mat,perfilId:perfilId,metaAnual:metaIns});
+    state.usuarios.push({id:id,nome:nome,mat:mat,perfilId:perfilId,metaAnual:metaIns,senha:senhaIns});
   }
   document.getElementById('mu-id').value='';
   document.getElementById('mu-nome').value='';
