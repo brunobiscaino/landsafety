@@ -846,7 +846,8 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     <div class="modal-title">&#10003; Inspe&ccedil;&atilde;o Finalizada</div>
     <div id="resultado-body"></div>
     <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="salvarInspecao()">SALVAR INSPE&Ccedil;&Atilde;O</button>
+      <div id="debug-estado" style="font-size:10px;color:var(--sage);margin-bottom:8px;padding:6px;background:rgba(195,204,154,.1);display:none"></div>
+      <button class="btn btn-primary" onclick="debugESalvar()">SALVAR INSPE&Ccedil;&Atilde;O</button>
       <button class="btn btn-outline" onclick="closeModal('modal-resultado')">Revisar</button>
     </div>
   </div>
@@ -1529,6 +1530,14 @@ function fazerLogout(){
 }
 let _inspOfflineQueue=[];
 
+function debugESalvar(){
+  const el=document.getElementById('debug-estado');
+  if(el){
+    el.style.display='block';
+    el.textContent='Estado: result='+(!!state._tempResult)+' insp='+(!!state._currentInsp||!!state.currentInsp)+' salvando='+_salvandoInspecao+' bkr='+(!!sessionStorage.getItem('_bkr'));
+  }
+  salvarInspecao();
+}
 async function salvarInspecao(){
   /* Proteção duplo clique - mas com timeout de segurança de 30s */
   if(_salvandoInspecao){
