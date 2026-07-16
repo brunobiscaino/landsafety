@@ -1488,6 +1488,7 @@ function finalizarChecklist(){
     '<div class="kpi-card"><div class="kpi-val green">'+ncl+'</div><div class="kpi-lbl">NC Leves</div></div>'+
     '<div class="kpi-card"><div class="kpi-val">'+na+'</div><div class="kpi-lbl">N\u00e3o Aplic\u00e1veis</div></div>'+
     '</div>';
+    console.log('[FINALIZAR] _tempResult:', JSON.stringify(state._tempResult), ' currentInsp ok:', !!state.currentInsp);
   openModal('modal-resultado');
 }
 
@@ -1566,9 +1567,12 @@ async function salvarInspecao(){
   /* Validações básicas */
   const r=state._tempResult;
   const ci=state.currentInsp;
+  console.log('[SALVAR] _tempResult:', r, ' currentInsp:', ci, ' salvando:', _salvandoInspecao);
   if(!r||!ci){
-    showToast('\u274c Dados da inspe\u00e7\u00e3o n\u00e3o encontrados. Tente novamente.','error');
+    showToast('\u274c Dados n\u00e3o encontrados. r='+!!r+' ci='+!!ci+' Reabra a inspe\u00e7\u00e3o e tente novamente.','error');
     resetBtn();
+    closeModal('modal-resultado');
+    showView('dashboard');
     return;
   }
 
