@@ -1527,6 +1527,7 @@ function fazerLogout(){
   document.getElementById('login-screen').style.display='flex';
 }
 let _inspOfflineQueue=[];
+  let _salvandoInspecao=false;
 
 async function salvarInspecao(){
   /* Proteção duplo clique - mas com timeout de segurança de 30s */
