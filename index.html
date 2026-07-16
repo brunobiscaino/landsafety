@@ -142,6 +142,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
 .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;cursor:pointer;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mist);font-family:'Barlow Condensed',sans-serif;font-weight:700;border-top:3px solid transparent;transition:all .15s}
 .bn-item.active{color:var(--sage);border-top-color:var(--sage);background:rgba(195,204,154,.06)}
 .bn-icon{font-size:20px}
+  body.checklist-mode .bottom-nav{display:none!important}
 .empty-state{text-align:center;padding:60px 20px;color:var(--mist);opacity:.5}
 .empty-state .ei{font-size:40px;margin-bottom:12px}
 .empty-state p{font-size:13px;letter-spacing:1px}
@@ -608,7 +609,20 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   </div>
 </div>
 
-<!-- MODAL NC -->
+<!-- MODAL PENDENTES (substitui confirm() nativo) -->
+  <div class="overlay" id="overlay-confirm-pendentes">
+    <div class="modal" style="max-width:420px">
+      <button class="modal-close" onclick="closeModal('overlay-confirm-pendentes')">&#10005;</button>
+      <div class="modal-title">Itens sem resposta</div>
+      <div id="confirm-pendentes-msg" style="font-size:13px;color:var(--mist);line-height:1.5;margin-bottom:20px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="closeModal('overlay-confirm-pendentes')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-ir-item-pendente">Ir para o item</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- MODAL NC -->
 <div class="overlay" id="modal-nc-detalhe">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-nc-detalhe')">&#10005;</button>
@@ -1126,6 +1140,7 @@ function showView(name){
   if(v)v.classList.add('active');
   document.querySelectorAll('.nav-item[data-view="'+name+'"]').forEach(n=>n.classList.add('active'));
   const bn=document.getElementById('bn-'+name);if(bn)bn.classList.add('active');
+  document.body.classList.toggle('checklist-mode',name==='checklist');
   if(name==='dashboard')refreshDashboard();
   if(name==='inspecoes')refreshInspecoesList();
   if(name==='nao-conformidades')refreshNCList();
@@ -1457,14 +1472,8 @@ function finalizarChecklist(){
     const primeiroNR=naoRespondidos[0];
     const section=CHECKLIST.GV.find(function(i){return i.code===primeiroNR.code;})?'GV':
                   CHECKLIST.G.find(function(i){return i.code===primeiroNR.code;})?'G':'L';
-    if(confirm(naoRespondidos.length+' item(ns) sem resposta. Todos os itens sao obrigatorios (C, NC ou NA).\n\nIr para o primeiro item nao respondido ('+primeiroNR.code+')?')){
-      showSection(section);
-      setTimeout(function(){
-        const el=document.getElementById('row-'+primeiroNR.code);
-        if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
-      },150);
-    }
-    return;
+    abrirModalPendentes(naoRespondidos.length,primeiroNR,section);
+  return;
   }
   const answered=all.filter(function(i){return state.checklist[i.code];}).length;
   const nc=all.filter(function(i){return state.checklist[i.code]==='NC';});
@@ -1490,6 +1499,21 @@ function finalizarChecklist(){
     '</div>';
   openModal('modal-resultado');
 }
+
+  function abrirModalPendentes(qtd,primeiroNR,section){
+    const msgEl=document.getElementById('confirm-pendentes-msg');
+    if(msgEl)msgEl.textContent=qtd+' item(ns) sem resposta. Todos os itens sao obrigatorios (C, NC ou NA). Ir para o primeiro item nao respondido ('+primeiroNR.code+')?';
+    const btnIr=document.getElementById('btn-ir-item-pendente');
+    if(btnIr)btnIr.onclick=function(){
+      closeModal('overlay-confirm-pendentes');
+      showSection(section);
+      setTimeout(function(){
+        const el=document.getElementById('row-'+primeiroNR.code);
+        if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+  },150);
+  };
+    openModal('overlay-confirm-pendentes');
+  }
 
 function fazerLogin(){
   const mat=document.getElementById('login-mat').value.trim();
