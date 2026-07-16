@@ -1,5 +1,5 @@
-const CACHE = 'sgoe-pi-v1';
-const ASSETS = ['/', '/index.html', '/config.js', '/app.js', '/style.css', '/manifest.json'];
+const CACHE = 'landsafety-v3';
+const ASSETS = ['/landsafety/', '/landsafety/index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -16,24 +16,15 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('supabase.co')) return;
+  if (e.request.url.includes('fonts.googleapis')) return;
+  /* Network first - always get fresh index.html */
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fresh = fetch(e.request).then(r => {
-        if (r && r.status === 200) {
-          const clone = r.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return r;
-      }).catch(() => cached);
-      return cached || fresh;
-    })
+    fetch(e.request).then(r => {
+      if (r && r.status === 200) {
+        const clone = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+      }
+      return r;
+    }).catch(() => caches.match(e.request))
   );
-});
-
-self.addEventListener('sync', e => {
-  if (e.tag === 'sync-inspections') {
-    e.waitUntil(self.clients.matchAll().then(clients =>
-      clients.forEach(c => c.postMessage({ type: 'SYNC_NOW' }))
-    ));
-  }
 });
