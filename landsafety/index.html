@@ -488,6 +488,18 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     <div class="page-sub" style="margin-top:-8px;margin-bottom:14px">Marque os m&oacute;dulos que cada perfil pode acessar, ou edite/exclua perfis personalizados. Administrador sempre tem acesso total.</div>
     <div id="perfis-table"></div>
   </div>
+
+  <!-- METAS DE INSPEÇÃO -->
+  <div class="card" style="margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">&#127942; Metas de Inspe&ccedil;&atilde;o &middot; Por Inspetor</div>
+        <div class="page-sub" style="margin:0">Defina metas mensais e semanais para cada inspetor</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="salvarMetas()">SALVAR METAS</button>
+    </div>
+    <div id="metas-table"></div>
+  </div>
 </div>
 </div>
 
@@ -700,7 +712,8 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     <div class="form-row cols-3">
       <div class="form-group"><label class="form-label">NR-12 Cesto Acop.</label><input class="form-input" type="date" id="mc-nr12cesto"></div>
       <div class="form-group"><label class="form-label">NR-12 Motosserra</label><input class="form-input" type="date" id="mc-nr12moto"></div>
-      <div class="form-group"><label class="form-label">NR-12 Cesta A&eacute;rea</label><input class="form-input" type="date" id="mc-nr12cesta"></div>
+      <div class="form-group"><label class="form-label">NR-12 Cesta A&eacute;rea</label><input class="form-input" type="date" id="mc-nr12cesta">
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Venc. NR-12 Martelete</label><input class="form-input" type="date" id="mc-nr12martelete"></div></div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarColab()">SALVAR</button>
@@ -724,18 +737,10 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
       <select class="form-select" id="mu-perfil"></select>
     </div>
     <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label">&#128274; Senha <span style="font-size:10px;color:var(--sage);letter-spacing:1px">&mdash; DISPON&Iacute;VEL AP&Oacute;S ATIVAR SUPABASE AUTH</span></label>
-      <input class="form-input" id="mu-senha" placeholder="Senha (em breve)" disabled style="opacity:.4;cursor:not-allowed">
+      <label class="form-label">&#128274; Senha</label>
+      <input class="form-input" type="password" id="mu-senha" placeholder="Deixe em branco para manter a atual" autocomplete="new-password">
+      <div style="font-size:10px;color:var(--sage);opacity:.7;margin-top:4px">Senha padrão: matrícula do usuário. Deixe em branco ao editar para não alterar.</div>
     </div>
-    <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label">&#127942; Meta anual de inspe&ccedil;&otilde;es</label>
-      <input class="form-input" type="number" id="mu-meta" placeholder="Ex: 48 (4 por m&ecirc;s)" min="0" max="500">
-      <div style="font-size:10px;color:var(--sage);opacity:.7;margin-top:4px">Quantas inspe&ccedil;&otilde;es este inspetor deve realizar no ano</div>
-    </div>
-    <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label">&#127942; Meta anual de inspe&ccedil;&otilde;es</label>
-      <input class="form-input" type="number" id="mu-meta" placeholder="Ex: 48 (4 por m&ecirc;s)" min="0" max="500">
-      <div style="font-size:10px;color:var(--sage);opacity:.7;margin-top:4px;letter-spacing:.5px">Defina quantas inspe&ccedil;&otilde;es este inspetor deve realizar no ano</div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarUsuario()">SALVAR</button>
@@ -1004,7 +1009,7 @@ async function loadPerfis(){
 async function loadUsuarios(){
   const rows=await sbSelect('usuarios','select=id,nome,matricula,perfil_id&order=id');
   if(rows&&rows.length>0){
-    state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0};});
+    state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0,metaMensal:r.meta_mensal||0,metaSemanal:r.meta_semanal||0,senha:r.senha||null};});
     state.selectedAgenteIds=[state.usuarios[0].id];
     userIdSeq=-1;
   }
@@ -1016,7 +1021,7 @@ async function loadColaboradores(){
       id:r.id,nome:r.nome,mat:r.matricula||'',cargo:r.cargo||'',empresa:r.empresa||'',contrato:r.contrato||'',
       ultimaInspecao:r.ultima_insp_data||null,
       aso:r.aso||null,cnh:r.cnh||null,nr10:r.nr10||null,nr35:r.nr35||null,
-      nr12cesto:r.nr12_cesto||null,nr12moto:r.nr12_moto||null,nr12cesta:r.nr12_cesta||null,
+      nr12cesto:r.nr12_cesto||null,nr12moto:r.nr12_moto||null,nr12cesta:r.nr12_cesta||null,nr12martelete:r.nr12_martelete||null,
       ativo:r.ativo!==false,motivoDesativacao:r.motivo_desativacao||null,dataDesativacao:r.data_desativacao||null
     };});
     colabIdSeq=-1;
@@ -1341,7 +1346,10 @@ function processPhotoFile(file,onDone,previewElId){
     const img=new Image();
     img.onload=function(){
       const canvas=document.createElement('canvas');
-      canvas.width=img.width;canvas.height=img.height;
+      /* Comprimir: max 1024px para reduzir base64 no banco */
+      const MAX_W=1024;
+      const scale=img.width>MAX_W?MAX_W/img.width:1;
+      canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
       const ctx=canvas.getContext('2d');
       ctx.drawImage(img,0,0);
       const now=new Date();
@@ -1355,7 +1363,7 @@ function processPhotoFile(file,onDone,previewElId){
         ctx.font=fontSize+'px Barlow, sans-serif';
         ctx.textBaseline='middle';
         ctx.fillText(dateStr+'   |   '+coordStr,14,canvas.height-barH/2);
-        const dataURL=canvas.toDataURL('image/jpeg',0.85);
+        const dataURL=canvas.toDataURL('image/jpeg',0.65);
         const foto={dataURL:dataURL,timestamp:now.toISOString(),coords:coordStr};
         preview.innerHTML='<img src="'+dataURL+'" style="max-width:100%;max-height:160px;border:1px solid var(--card-border)">';
         onDone(foto);
@@ -1443,69 +1451,46 @@ function updateProgress(){
 /* ============ FINALIZAR / SALVAR ============ */
 function finalizarChecklist(){
   const all=[].concat(CHECKLIST.GV,CHECKLIST.G,CHECKLIST.L);
-  /* M2 - todos os itens são obrigatórios */
+  /* M2 - todos os itens sao obrigatorios */
   const naoRespondidos=all.filter(function(i){return !state.checklist[i.code];});
   if(naoRespondidos.length>0){
     const primeiroNR=naoRespondidos[0];
     const section=CHECKLIST.GV.find(function(i){return i.code===primeiroNR.code;})?'GV':
                   CHECKLIST.G.find(function(i){return i.code===primeiroNR.code;})?'G':'L';
-    if(confirm('&#9888; '+naoRespondidos.length+' item(ns) sem resposta.\n\nTodos os itens s\u00e3o obrigat\u00f3rios (C, NC ou NA).\n\nIr para o primeiro item n\u00e3o respondido ('+primeiroNR.code+')?')){
-      switchSection(section);
-      const area=document.getElementById('cl-scroll-area');
-      if(area){
-        setTimeout(function(){
-          const el=document.querySelector('[data-code="'+primeiroNR.code+'"]');
-          if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
-        },100);
-      }
+    if(confirm(naoRespondidos.length+' item(ns) sem resposta. Todos os itens sao obrigatorios (C, NC ou NA).\n\nIr para o primeiro item nao respondido ('+primeiroNR.code+')?')){
+      showSection(section);
+      setTimeout(function(){
+        const el=document.getElementById('row-'+primeiroNR.code);
+        if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+      },150);
     }
     return;
   }
-  const ncgv=CHECKLIST.GV.filter(function(i){return state.checklist[i.code]==='NC';}).length;
-  const ncg=CHECKLIST.G.filter(function(i){return state.checklist[i.code]==='NC';}).length;
-  const ncl=CHECKLIST.L.filter(function(i){return state.checklist[i.code]==='NC';}).length;
-  const nc=ncgv+ncg+ncl;
-  const answC=all.filter(function(i){return state.checklist[i.code]==='C'||state.checklist[i.code]==='NA';}).length;
-  const isp=answered>0?Math.round((answC/answered)*100):0;
-  const now=new Date();const inicio=new Date(state.currentInsp.dataInicio);
-  const duracaoMin=Math.round((now-inicio)/60000);
-  const nai=state.currentInsp.colaboradores.length;
-  const nae=state.currentInsp.agentes.length;
-  const hhi=(nai*nae*(duracaoMin/60)).toFixed(1);
+  const answered=all.filter(function(i){return state.checklist[i.code];}).length;
+  const nc=all.filter(function(i){return state.checklist[i.code]==='NC';});
+  const ncgv=nc.filter(function(i){return i.section==='GV'||CHECKLIST.GV.find(function(x){return x.code===i.code;});}).length;
+  const ncg=nc.filter(function(i){return i.section==='G'||CHECKLIST.G.find(function(x){return x.code===i.code;});}).length;
+  const ncl=nc.filter(function(i){return i.section==='L'||CHECKLIST.L.find(function(x){return x.code===i.code;});}).length;
+  const na=all.filter(function(i){return state.checklist[i.code]==='NA';}).length;
+  const total=answered-na;
+  const isp=total>0?Math.round(((total-nc.length)/total)*100):100;
+  const cols=state.currentInsp.colaboradores||[];
+  const agentes=state.currentInsp.agentes||[];
+  const hhi=cols.length*agentes.length*(state.currentInsp.duracao||1);
+  state._tempResult={ncgv:ncgv,ncg:ncg,ncl:ncl,nc:nc.length,na:na,isp:isp,hhi:hhi};
   const ispColor=isp>=90?'#5ebc8a':isp>=70?'#c9955a':'#e07c74';
-  const gpsTxt=state.currentInsp.gps?state.currentInsp.gps.lat.toFixed(5)+', '+state.currentInsp.gps.lng.toFixed(5):'n\u00e3o capturada';
-  let html='';
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
-  html+='<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+isp+'%</div><div class="kpi-lbl">ISP</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val red">'+ncgv+'</div><div class="kpi-lbl">NC Grav&iacute;ssimas</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val warn">'+ncg+'</div><div class="kpi-lbl">NC Graves</div></div>';
-  html+='</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
-  html+='<div class="kpi-card"><div class="kpi-val green">'+ncl+'</div><div class="kpi-lbl">NC Leves</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val">'+answered+'</div><div class="kpi-lbl">Itens avaliados</div></div>';
-  html+='<div class="kpi-card"><div class="kpi-val">'+hhi+'</div><div class="kpi-lbl">HHI (H/H Inspe&ccedil;&atilde;o)</div></div>';
-  html+='</div><div class="card" style="padding:14px;margin-bottom:12px">';
-  html+='<div class="card-title">CENA &middot; '+state.currentInsp.atividade+'</div>';
-  html+='<div style="font-size:12px;color:var(--mist)">Local: '+(state.currentInsp.local||'&mdash;')+' &middot; GPS: '+gpsTxt+'</div>';
-  html+='<div style="font-size:12px;color:var(--mist);margin-top:4px">Dura&ccedil;&atilde;o: '+duracaoMin+' min &middot; Colaboradores: '+nai+' &middot; Agentes: '+nae+'</div></div>';
-  if(nc>0){
-    html+='<div class="card" style="padding:14px"><div class="card-title" style="color:#e07c74">&#9888; '+nc+' n\u00e3o conformidades</div>';
-    html+=state.currentInsp.ncDetails.map(function(d){
-      const cols=(d.colaboradores&&d.colaboradores.length)?d.colaboradores.join(', '):'\u2014';
-      return '<div style="padding:8px 0;border-bottom:1px solid rgba(195,204,154,.06)"><span class="badge badge-'+d.section.toLowerCase()+'" style="margin-right:8px">'+d.section+'</span><strong style="color:var(--white);font-size:12px">'+d.code+'</strong><div style="font-size:12px;color:var(--mist);margin-top:2px">'+d.desc.substring(0,80)+'...</div><div style="font-size:11px;color:var(--sage);margin-top:2px">Colaborador(es): '+cols+(d.foto?' &middot; \u{1F4F7} foto anexada':'')+'</div></div>';
-    }).join('');
-    html+='</div>';
-  }else{
-    html+='<div style="text-align:center;color:#5ebc8a;font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;padding:16px">&#10003; NENHUMA NC REGISTRADA</div>';
-  }
-  document.getElementById('resultado-body').innerHTML=html;
-  state._tempResult={ncgv:ncgv,ncg:ncg,ncl:ncl,nc:nc,answC:answC,isp:isp,hhi:hhi,duracaoMin:duracaoMin,nai:nai,nae:nae,answered:answered};
+  const body=document.getElementById('resultado-body');
+  body.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">'+
+    '<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+isp+'%</div><div class="kpi-lbl">ISP</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val">'+answered+'</div><div class="kpi-lbl">Itens respondidos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val red">'+ncgv+'</div><div class="kpi-lbl">NC Grav\u00edssimas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val warn">'+ncg+'</div><div class="kpi-lbl">NC Graves</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val green">'+ncl+'</div><div class="kpi-lbl">NC Leves</div></div>'+
+    '<div class="kpi-card"><div class="kpi-val">'+na+'</div><div class="kpi-lbl">N\u00e3o Aplic\u00e1veis</div></div>'+
+    '</div>';
   openModal('modal-resultado');
 }
 
-let _salvandoInspecao=false;
-let _loggedUserId=null;
-
-/* ============ LOGIN / AUTH ============ */
 function fazerLogin(){
   const mat=document.getElementById('login-mat').value.trim();
   const senha=document.getElementById('login-senha').value;
@@ -1544,130 +1529,161 @@ function fazerLogout(){
 let _inspOfflineQueue=[];
 
 async function salvarInspecao(){
-  /* M3 - evitar duplo clique */
-  if(_salvandoInspecao)return;
+  /* Proteção duplo clique - mas com timeout de segurança de 30s */
+  if(_salvandoInspecao){
+    const agora=Date.now();
+    if(!window._salvandoTs||agora-window._salvandoTs>30000){
+      _salvandoInspecao=false; /* reset forçado após 30s */
+    }else{
+      return;
+    }
+  }
   _salvandoInspecao=true;
+  window._salvandoTs=Date.now();
+
   const btnSalvar=document.querySelector('#modal-resultado .btn-primary');
   if(btnSalvar){btnSalvar.disabled=true;btnSalvar.textContent='SALVANDO...';}
 
-  const r=state._tempResult;const now=new Date();
-  const ci=state.currentInsp;
-  const colabIds=ci.colaboradores.map(function(c){return c.id;});
-  const colabNomes=ci.colaboradores.map(function(c){return c.nome;});
-  const agenteNomes=ci.agentes.map(function(a){return a.nome;});
-
-  /* ── Payload para o banco (mapeado pro schema real) ── */
-  const dbInsp={
-    data:now.toISOString().substring(0,10),
-    hora:now.toTimeString().substring(0,8),
-    inspetor_nome:agenteNomes.join(', ')||'',
-    colab_id:colabIds.length===1?colabIds[0]:null,
-    colab_nome:colabNomes.join(', ')||'',
-    empresa:EMPRESA,
-    contrato:ci.colaboradores[0]?ci.colaboradores[0].contrato||'PLPT TERESINA':'PLPT TERESINA',
-    local_insp:ci.local||null,
-    atividade:ci.atividade||null,
-    total_ncs:r.nc,
-    tolerancia_zero:r.ncgv>0,
-    status:'concluida',
-    observacoes:null,
-    /* colunas adicionadas via ALTER TABLE */
-    sup_cena:ci.supCena||null,
-    agentes:agenteNomes,
-    colab_ids:colabIds,
-    colab_nomes:colabNomes,
-    ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,
-    isp:r.isp,hhi:r.hhi,
-    gps_lat:ci.gps?ci.gps.lat:null,
-    gps_lng:ci.gps?ci.gps.lng:null,
-    data_fim:now.toISOString()
+  const resetBtn=function(){
+    _salvandoInspecao=false;
+    window._salvandoTs=null;
+    if(btnSalvar){btnSalvar.disabled=false;btnSalvar.textContent='SALVAR INSPE\u00c7\u00c3O';}
   };
 
-  /* ── Inserir inspeção ── */
-  let dbId=null;
-  const rowInsp=await sbInsert('inspecoes',dbInsp);
-  updateSyncIndicator();
-  if(rowInsp&&rowInsp[0])dbId=rowInsp[0].id;
+  const fecharEIr=function(){
+    resetBtn();
+    closeModal('modal-resultado');
+    inspGPS=null;
+    state.selectedColabIds=[];
+    const gd=document.getElementById('gps-display');
+    if(gd){gd.textContent='Coordenada n\u00e3o capturada';gd.style.color='var(--mist)';gd.style.opacity='.6';}
+    updateBadges();updateAlertBadge();updatePendenciasBadge();
+    showView('dashboard');
+    refreshDashboard();
+    refreshInspecoesList();
+  };
 
-  /* ── Objeto local ── */
+  /* Validações básicas */
+  const r=state._tempResult;
+  const ci=state.currentInsp;
+  if(!r||!ci){
+    showToast('\u274c Dados da inspe\u00e7\u00e3o n\u00e3o encontrados. Tente novamente.','error');
+    resetBtn();
+    return;
+  }
+
+  const now=new Date();
+  const colabIds=(ci.colaboradores||[]).map(function(c){return c.id;});
+  const colabNomes=(ci.colaboradores||[]).map(function(c){return c.nome;});
+  const agenteNomes=(ci.agentes||[]).map(function(a){return a.nome;});
+
+  /* 1. Salvar localmente PRIMEIRO — garante que aparece na tela */
   const insp={
-    id:dbId||ci.id,empresa:EMPRESA,
+    id:'local-'+Date.now(),
+    empresa:EMPRESA,
     atividade:ci.atividade,base:ci.base,local:ci.local,
     supCena:ci.supCena,gps:ci.gps,
     dataInicio:ci.dataInicio,ncDetails:ci.ncDetails,
     colaboradores:ci.colaboradores,agentes:ci.agentes,
-    num:state.inspecoes.length+1,dataFim:now.toISOString(),
-    ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,nc:r.nc,isp:r.isp,hhi:r.hhi,
-    status:'Conclu\u00edda',checklist:Object.assign({},state.checklist)
+    num:state.inspecoes.length+1,
+    dataFim:now.toISOString(),
+    ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,nc:r.nc,
+    isp:r.isp,hhi:r.hhi,
+    status:'Conclu\u00edda',
+    checklist:Object.assign({},state.checklist)
   };
   state.inspecoes.push(insp);
 
-  /* ── Inserir cada NC no banco ── */
-  const ncPayloads=ci.ncDetails.map(function(d){
-    return {
-      inspecao_id:insp.id,
-      categoria:d.section,
-      pergunta:d.desc,
-      desvio:d.obs||null,
-      tolerancia_zero:d.section==='GV',
-      /* colunas extras */
-      codigo:d.code,
-      secao:d.section,
-      obs:d.obs||null,
-      acao:d.acao||null,
-      resp:d.resp||null,
-      prazo:d.prazo||null,
-      colab_nomes:d.colaboradores||[],
-      foto_nc:d.foto?{dataURL:d.foto.dataURL,timestamp:d.foto.timestamp,coords:d.foto.coords}:null,
-      status_nc:'Aberta'
-    };
-  });
-  if(ncPayloads.length>0){
-    const rowsNC=await sbInsert('nao_conformidades',ncPayloads);
-    updateSyncIndicator();
-    /* Mapear ids do banco para state.ncs */
-    ci.ncDetails.forEach(function(d,idx){
-      const dbNC=rowsNC&&rowsNC[idx]?rowsNC[idx]:null;
-      state.ncs.push({
-        code:d.code,desc:d.desc,section:d.section,obs:d.obs,acao:d.acao,
-        resp:d.resp,prazo:d.prazo,foto:d.foto,colaboradores:d.colaboradores,
-        inspId:insp.id,inspNum:insp.num,data:insp.dataFim,
-        status:'Aberta',dbId:dbNC?dbNC.id:null
-      });
+  /* NCs locais */
+  (ci.ncDetails||[]).forEach(function(d){
+    state.ncs.push({
+      code:d.code,desc:d.desc,section:d.section,obs:d.obs,acao:d.acao,
+      resp:d.resp,prazo:d.prazo,foto:d.foto,colaboradores:d.colaboradores,
+      inspId:insp.id,inspNum:insp.num,data:insp.dataFim,
+      status:'Aberta',dbId:null
     });
-  }
-
-  /* ── Atualizar ultima_insp_data dos colaboradores ── */
-  ci.colaboradores.forEach(function(col){
-    const reg=state.colaboradores.find(function(c){return c.id===col.id;});
-    if(reg){
-      reg.ultimaInspecao=insp.dataFim;
-      if(reg.id&&!(typeof reg.id==='number'&&reg.id<0))
-        sbUpdate('colaboradores',reg.id,{ultima_insp_data:now.toISOString().substring(0,10)});
-    }
   });
 
-  updateBadges();
-  updateAlertBadge();
-  closeModal('modal-resultado');
-  inspGPS=null;state.selectedColabIds=[];
-  document.getElementById('gps-display').textContent='Coordenada n\u00e3o capturada';
-  document.getElementById('gps-display').style.color='var(--mist)';
-  document.getElementById('gps-display').style.opacity='.6';
+  /* 2. Fechar modal e ir ao dashboard AGORA */
+  fecharEIr();
+  showToast('\u2705 Inspe\u00e7\u00e3o #'+insp.num+' registrada! Sincronizando...','ok');
 
-  /* M3 - feedback de envio */
-  if(dbId){
-    showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' enviada e salva no Supabase!','ok');
-  }else{
-    _inspOfflineQueue.push({insp:insp,dbInsp:dbInsp,ncPayloads:ncPayloads});
-    showToast('\u26a0\ufe0f Sem internet \u2014 inspe\u00e7\u00e3o salva localmente. Ser\u00e1 enviada quando a conex\u00e3o for restabelecida.','warn');
+  /* 3. Persistir no Supabase em background */
+  try{
+    const dbInsp={
+      data:now.toISOString().substring(0,10),
+      hora:now.toTimeString().substring(0,8),
+      inspetor_nome:agenteNomes.join(', ')||'',
+      colab_id:colabIds.length===1?colabIds[0]:null,
+      colab_nome:colabNomes.join(', ')||'',
+      empresa:EMPRESA,
+      contrato:(ci.colaboradores&&ci.colaboradores[0])?ci.colaboradores[0].contrato||'PLPT TERESINA':'PLPT TERESINA',
+      local_insp:ci.local||null,
+      atividade:ci.atividade||null,
+      total_ncs:r.nc,
+      tolerancia_zero:r.ncgv>0,
+      status:'concluida',
+      sup_cena:ci.supCena||null,
+      agentes:agenteNomes,
+      colab_ids:colabIds,
+      colab_nomes:colabNomes,
+      ncgv:r.ncgv,ncg:r.ncg,ncl:r.ncl,
+      isp:r.isp,hhi:r.hhi,
+      gps_lat:ci.gps?ci.gps.lat:null,
+      gps_lng:ci.gps?ci.gps.lng:null,
+      data_fim:now.toISOString()
+    };
+
+    const rowInsp=await sbInsert('inspecoes',dbInsp);
+    if(rowInsp&&rowInsp[0]){
+      /* Atualiza id local para o id real do banco */
+      insp.id=rowInsp[0].id;
+      updateSyncIndicator();
+      showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' salva no Supabase!','ok');
+
+      /* NCs no banco */
+      const ncPayloads=(ci.ncDetails||[]).map(function(d){
+        return {
+          inspecao_id:insp.id,
+          categoria:d.section,pergunta:d.desc,desvio:d.obs||null,
+          tolerancia_zero:d.section==='GV',
+          codigo:d.code,secao:d.section,obs:d.obs||null,acao:d.acao||null,
+          resp:d.resp||null,prazo:d.prazo||null,
+          colab_nomes:d.colaboradores||[],
+          foto_nc:d.foto?{dataURL:d.foto.dataURL?d.foto.dataURL.substring(0,400000):null,
+            timestamp:d.foto.timestamp,coords:d.foto.coords}:null,
+          status_nc:'Aberta'
+        };
+      });
+      if(ncPayloads.length>0){
+        sbInsert('nao_conformidades',ncPayloads).then(function(rowsNC){
+          if(rowsNC){
+            state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);})
+              .forEach(function(n,i){if(rowsNC[i])n.dbId=rowsNC[i].id;});
+          }
+        });
+      }
+      /* Atualizar ultima_insp_data dos colaboradores */
+      (ci.colaboradores||[]).forEach(function(col){
+        const reg=state.colaboradores.find(function(c){return c.id===col.id;});
+        if(reg){
+          reg.ultimaInspecao=insp.dataFim;
+          if(reg.id&&!(typeof reg.id==='number'&&reg.id<0))
+            sbUpdate('colaboradores',reg.id,{ultima_insp_data:now.toISOString().substring(0,10)});
+        }
+      });
+    }else{
+      showToast('\u26a0\ufe0f Sem conex\u00e3o \u2014 inspe\u00e7\u00e3o salva localmente','warn');
+      _inspOfflineQueue.push({insp:insp,dbInsp:dbInsp});
+      scheduleOfflineSync();
+    }
+  }catch(err){
+    console.error('Supabase error:',err);
+    showToast('\u26a0\ufe0f Salvo localmente \u2014 ser\u00e1 sincronizado automaticamente','warn');
     scheduleOfflineSync();
   }
-
-  _salvandoInspecao=false;
-  if(btnSalvar){btnSalvar.disabled=false;btnSalvar.textContent='SALVAR INSPE\u00c7\u00c3O';}
-  showView('dashboard');
 }
+
 
 function showToast(msg,type){
   let t=document.getElementById('app-toast');
@@ -1727,6 +1743,8 @@ const DOCS_CONFIG=[
   {key:'nr12cesto',label:'NR-12 Cesto'},
   {key:'nr12moto',label:'NR-12 Motosserra'},
   {key:'nr12cesta',label:'NR-12 Cesta A\u00e9rea'}
+,
+  {key:'nr12martelete',label:'NR-12 Martelete'}
 ];
 function getDocVencimentos(c){
   /* Retorna array de {label, venc, diasRestantes, status} */
@@ -1751,8 +1769,13 @@ function docBadgeHTML(d){
   return '<span class="badge '+cls+'" title="'+d.label+': '+d.venc.toLocaleDateString('pt-BR')+'">'+d.label+' &middot; '+txt+'</span>';
 }
 function getColabCicloStatus(c){
-  if(!c.ultimaInspecao)return{label:'Nunca inspecionado',cls:'badge-na',proxima:null,dias:null};
-  const ultima=new Date(c.ultimaInspecao);
+  /* Ignorar ultima_insp_data do banco se não temos inspeções carregadas no sistema atual */
+  const temInspLocal=state.inspecoes.some(function(i){
+    return (i.colaboradores||[]).some(function(col){return String(col.id)===String(c.id);});
+  });
+  const ultimaInsp=temInspLocal?c.ultimaInspecao:null;
+  if(!ultimaInsp)return{label:'Nunca inspecionado',cls:'badge-na',proxima:null,dias:null};
+  const ultima=new Date(ultimaInsp);
   const proxima=new Date(ultima);proxima.setDate(proxima.getDate()+30);
   const hoje=new Date();
   const diffDias=Math.ceil((proxima-hoje)/(1000*60*60*24));
@@ -2027,7 +2050,7 @@ function refreshDashboard(){
       return p&&(p.permissoes.indexOf('nova-inspecao')>=0||p.permissoes.indexOf('todos')>=0);
     });
     const lista=inspetores.map(function(u){
-      return {nome:u.nome,ano:inspAno[u.nome]||0,mes:inspMes[u.nome]||0,meta:u.metaAnual||0};
+      return {nome:u.nome,ano:inspAno[u.nome]||0,mes:inspMes[u.nome]||0,meta:u.metaAnual||0,metaMensal:u.metaMensal||0,metaSemanal:u.metaSemanal||0};
     }).filter(function(x){return x.ano>0||x.meta>0;}).sort(function(a,b){return b.ano-a.ano;});
     if(lista.length===0){
       rankInspEl.innerHTML='<div class="empty-state"><div class="ei">&#128202;</div><p>Nenhum inspetor com meta ou inspec\u00f5es registradas</p></div>';
@@ -2035,7 +2058,7 @@ function refreshDashboard(){
       const medals=['&#127947;','&#127948;','&#127949;'];
       rankInspEl.innerHTML=lista.map(function(e,i){
         const metaAnual=e.meta||0;
-        const metaMes=metaAnual>0?Math.ceil(metaAnual/12):0;
+        const metaMes=e.metaMensal||0;const metaSem=e.metaSemanal||0;
         const pctAnual=metaAnual>0?Math.min(100,Math.round(e.ano/metaAnual*100)):null;
         const pctMes=metaMes>0?Math.min(100,Math.round(e.mes/metaMes*100)):null;
         const bar=pctAnual===null?'var(--sage)':pctAnual>=100?'#5ebc8a':pctAnual>=70?'#c9955a':'#e07c74';
@@ -2257,7 +2280,10 @@ async function confirmarExcluirInspecao(){
   refreshInspecoesList();
   refreshNCList();
   refreshDashboard();
+  refreshECResumo();
   updateBadges();
+  updateAlertBadge();
+  updatePendenciasBadge();
   showToast('\ud83d\uddd1\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' exclu\u00edda do banco','ok');
 }
 
@@ -2473,6 +2499,7 @@ function refreshColabList(){
   state.ncs.forEach(function(n){(n.colaboradores||[]).forEach(function(name){ranking[name]=(ranking[name]||0)+1;});});
   tbody.innerHTML=list.map(function(c){
     const ciclo=getColabCicloStatus(c);
+    const temInspLocal=state.inspecoes.some(function(i){return (i.colaboradores||[]).some(function(col){return String(col.id)===String(c.id);});});
     const ncCount=ranking[c.nome]||0;
     const docsAlerta=getDocsAlerta(c);
     const docsBadges=docsAlerta.length>0?docsAlerta.map(docBadgeHTML).join(' '):'<span class="badge badge-ok">OK</span>';
@@ -2499,6 +2526,7 @@ function openEditColab(id){
   document.getElementById('mc-nr12cesto').value=c.nr12cesto||'';
   document.getElementById('mc-nr12moto').value=c.nr12moto||'';
   document.getElementById('mc-nr12cesta').value=c.nr12cesta||'';
+  document.getElementById('mc-nr12martelete').value=c.nr12martelete||'';
   openModal('modal-colab');
 }
 async function salvarColab(){
@@ -2513,13 +2541,14 @@ async function salvarColab(){
     nr35:document.getElementById('mc-nr35').value||null,
     nr12cesto:document.getElementById('mc-nr12cesto').value||null,
     nr12moto:document.getElementById('mc-nr12moto').value||null,
-    nr12cesta:document.getElementById('mc-nr12cesta').value||null
+    nr12cesta:document.getElementById('mc-nr12cesta').value||null,
+    nr12martelete:document.getElementById('mc-nr12martelete').value||null
   };
   const dbPayload={
     nome:fields.nome,matricula:fields.mat||null,cargo:fields.cargo||null,
     empresa:fields.empresa||null,contrato:fields.contrato||null,
     aso:fields.aso,cnh:fields.cnh,nr10:fields.nr10,nr35:fields.nr35,
-    nr12_cesto:fields.nr12cesto,nr12_moto:fields.nr12moto,nr12_cesta:fields.nr12cesta
+    nr12_cesto:fields.nr12cesto,nr12_moto:fields.nr12moto,nr12_cesta:fields.nr12cesta,nr12_martelete:fields.nr12martelete
   };
   if(editingColabId){
     /* EDIT MODE */
@@ -2536,7 +2565,7 @@ async function salvarColab(){
     state.colaboradores.push(Object.assign({id:id,ultimaInspecao:null},fields));
   }
   document.querySelector('#modal-colab .modal-title').textContent='\ud83d\udc77 Novo Colaborador';
-  ['mc-nome','mc-mat','mc-cargo','mc-contrato','mc-aso','mc-cnh','mc-nr10','mc-nr35','mc-nr12cesto','mc-nr12moto','mc-nr12cesta'].forEach(function(id){document.getElementById(id).value='';});
+  ['mc-nome','mc-mat','mc-cargo','mc-contrato','mc-aso','mc-cnh','mc-nr10','mc-nr35','mc-nr12cesto','mc-nr12moto','mc-nr12cesta','mc-nr12martelete'].forEach(function(id){document.getElementById(id).value='';});
   closeModal('modal-colab');
   refreshColabList();
   renderColabSelect();
@@ -2676,13 +2705,15 @@ function renderUserSwitcher(){
   if(current && state.usuarios.find(function(u){return String(u.id)===current;})) sel.value=current;
 }
 function refreshUsuariosList(){
+  renderMetasTable();
   const tbody=document.getElementById('tbody-usuarios');
   tbody.innerHTML=state.usuarios.map(function(u){
     const perfil=PERFIS.find(function(p){return p.id===u.perfilId;});
     const isAdmin=(u.id===1);
     const editBtn='<button class="btn btn-outline btn-sm" onclick="openEditUsuario('+u.id+')">&#9998; Editar</button>';
     const delBtn=isAdmin?'':'<button class="btn btn-outline btn-sm" onclick="deleteUsuario('+u.id+')">Excluir</button>';
-    return '<tr><td style="color:var(--white);font-weight:700">'+u.nome+'</td><td>'+(u.mat||'\u2014')+'</td><td><span class="badge badge-na">'+(perfil?perfil.nome:'')+'</span></td><td style="text-align:right;white-space:nowrap">'+editBtn+' '+delBtn+'</td></tr>';
+    const senhaStatus=u.senha&&u.senha!==u.mat?'<span class="badge badge-ok">&#128274; Senha OK</span>':'<span class="badge badge-warn">&#128273; Sem senha</span>';
+    return '<tr><td style="color:var(--white);font-weight:700">'+u.nome+'</td><td>'+(u.mat||'\u2014')+'</td><td><span class="badge badge-na">'+(perfil?perfil.nome:'')+'</span></td><td>'+senhaStatus+'</td><td style="text-align:right;white-space:nowrap">'+editBtn+' '+delBtn+'</td></tr>';
   }).join('');
 }
 function openEditUsuario(id){
@@ -2692,7 +2723,8 @@ function openEditUsuario(id){
   document.getElementById('mu-id').value=id;
   document.getElementById('mu-nome').value=u.nome||'';
   document.getElementById('mu-mat').value=u.mat||'';
-  document.getElementById('mu-meta').value=u.metaAnual||0;
+  document.getElementById('mu-senha').value='';
+  const muMetaRef=document.getElementById('mu-meta');if(muMetaRef)muMetaRef.value=u.metaAnual||0;
   const sel=document.getElementById('mu-perfil');
   renderPerfilOptions();
   if(u.perfilId)sel.value=u.perfilId;
@@ -2723,17 +2755,23 @@ async function salvarUsuario(){
     const id=parseInt(editId);
     const u=state.usuarios.find(function(u){return u.id===id;});
     if(u){u.nome=nome;u.mat=mat;u.perfilId=perfilId;}
-    const metaVal=parseInt(document.getElementById('mu-meta').value)||0;
-    if(id>0)await sbUpdate('usuarios',id,{nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaVal});
-    const u2=state.usuarios.find(function(u){return u.id===id;});if(u2)u2.metaAnual=metaVal;
+    const muMetaEl=document.getElementById('mu-meta');const metaVal=muMetaEl?parseInt(muMetaEl.value)||0:0;
+    const senhaEdit=document.getElementById('mu-senha').value.trim();
+    const payloadEdit={nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaVal};
+    if(senhaEdit)payloadEdit.senha=senhaEdit;
+    if(id>0)await sbUpdate('usuarios',id,payloadEdit);
+    const u2=state.usuarios.find(function(u){return u.id===id;});
+    if(u2){u2.metaAnual=metaVal;if(senhaEdit)u2.senha=senhaEdit;}
     updateSyncIndicator();
   }else{
     /* INSERT MODE */
-    const metaIns=parseInt(document.getElementById('mu-meta').value)||0;
-    const row=await sbInsert('usuarios',{nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaIns});
+    const muMetaElI=document.getElementById('mu-meta');const metaIns=muMetaElI?parseInt(muMetaElI.value)||0:0;
+    const senhaIns=document.getElementById('mu-senha').value.trim()||mat;
+    const payloadIns={nome:nome,matricula:mat||null,perfil_id:perfilId,meta_anual:metaIns,senha:senhaIns};
+    const row=await sbInsert('usuarios',payloadIns);
     updateSyncIndicator();
     const id=(row&&row[0])?row[0].id:userIdSeq--;
-    state.usuarios.push({id:id,nome:nome,mat:mat,perfilId:perfilId,metaAnual:metaIns});
+    state.usuarios.push({id:id,nome:nome,mat:mat,perfilId:perfilId,metaAnual:metaIns,senha:senhaIns});
   }
   document.getElementById('mu-id').value='';
   document.getElementById('mu-nome').value='';
@@ -2768,6 +2806,7 @@ function renderPerfisTable(){
   });
   html+='</tbody></table></div>';
   document.getElementById('perfis-table').innerHTML=html;
+  renderMetasTable();
 }
 function togglePermissao(perfilId,modKey,checked){
   const p=PERFIS.find(function(p){return p.id===perfilId;});
@@ -2776,6 +2815,77 @@ function togglePermissao(perfilId,modKey,checked){
   else{p.permissoes=p.permissoes.filter(function(k){return k!==modKey;});}
   if(p.id>0)sbUpdate('perfis',p.id,{permissoes:p.permissoes}).then(updateSyncIndicator);
   applyPermissions();
+}
+
+/* ============ METAS DE INSPEÇÃO ============ */
+function renderMetasTable(){
+  const el=document.getElementById('metas-table');
+  if(!el)return;
+  const inspetores=state.usuarios.filter(function(u){
+    const p=PERFIS.find(function(p){return p.id===u.perfilId;});
+    return p&&(p.permissoes.indexOf('nova-inspecao')>=0||p.permissoes.indexOf('todos')>=0);
+  });
+  if(inspetores.length===0){
+    el.innerHTML='<div class="empty-state"><div class="ei">&#128202;</div><p>Nenhum inspetor cadastrado ainda. Adicione usuários com perfil de inspetor.</p></div>';
+    return;
+  }
+  let html='<div style="overflow:auto"><table class="data-table" style="min-width:500px">';
+  html+='<thead><tr><th>Inspetor</th><th>Perfil</th><th style="text-align:center;white-space:nowrap">Meta Semanal</th><th style="text-align:center;white-space:nowrap">Meta Mensal</th><th style="text-align:center;white-space:nowrap">Meta Anual</th></tr></thead><tbody>';
+  inspetores.forEach(function(u){
+    const perfil=PERFIS.find(function(p){return p.id===u.perfilId;});
+    const metaS=u.metaSemanal||0;
+    const metaM=u.metaMensal||0;
+    const metaA=u.metaAnual||0;
+    html+='<tr>';
+    html+='<td style="color:var(--white);font-weight:700">'+u.nome+'</td>';
+    html+='<td><span class="badge badge-na">'+(perfil?perfil.nome:'')+'</span></td>';
+    html+='<td style="text-align:center"><input type="number" class="form-input" style="width:80px;text-align:center;padding:6px 8px" min="0" max="50" value="'+metaS+'" data-uid="'+u.id+'" data-field="metaSemanal" onchange="updateMetaLocal(this)"></td>';
+    html+='<td style="text-align:center"><input type="number" class="form-input" style="width:80px;text-align:center;padding:6px 8px" min="0" max="200" value="'+metaM+'" data-uid="'+u.id+'" data-field="metaMensal" onchange="updateMetaLocal(this)"></td>';
+    html+='<td style="text-align:center"><input type="number" class="form-input" style="width:90px;text-align:center;padding:6px 8px" min="0" max="500" value="'+metaA+'" data-uid="'+u.id+'" data-field="metaAnual" onchange="updateMetaLocal(this)"></td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<div style="margin-top:10px;font-size:11px;color:var(--sage);opacity:.7;letter-spacing:.5px">Dica: defina a meta semanal e o sistema calcula automaticamente mensal (×4) e anual (×52). Ou preencha individualmente.</div>';
+  el.innerHTML=html;
+}
+function updateMetaLocal(input){
+  const uid=parseInt(input.getAttribute('data-uid'));
+  const field=input.getAttribute('data-field');
+  const val=parseInt(input.value)||0;
+  const u=state.usuarios.find(function(u){return u.id===uid;});
+  if(!u)return;
+  u[field]=val;
+  /* Auto-calculate: if semanal changed, suggest mensal and anual */
+  if(field==='metaSemanal'){
+    const row=input.closest('tr');
+    if(row){
+      const inputs=row.querySelectorAll('input[type="number"]');
+      /* inputs[0]=semanal, inputs[1]=mensal, inputs[2]=anual */
+      if(inputs[1]&&!parseInt(inputs[1].value)){inputs[1].value=val*4;u.metaMensal=val*4;}
+      if(inputs[2]&&!parseInt(inputs[2].value)){inputs[2].value=val*52;u.metaAnual=val*52;}
+    }
+  }
+}
+async function salvarMetas(){
+  const inspetores=state.usuarios.filter(function(u){
+    const p=PERFIS.find(function(p){return p.id===u.perfilId;});
+    return p&&(p.permissoes.indexOf('nova-inspecao')>=0||p.permissoes.indexOf('todos')>=0);
+  });
+  let saved=0;
+  for(let i=0;i<inspetores.length;i++){
+    const u=inspetores[i];
+    if(u.id>0){
+      await sbUpdate('usuarios',u.id,{
+        meta_semanal:u.metaSemanal||0,
+        meta_mensal:u.metaMensal||0,
+        meta_anual:u.metaAnual||0
+      });
+      saved++;
+    }
+  }
+  updateSyncIndicator();
+  refreshDashboard();
+  showToast('✅ Metas salvas para '+saved+' inspetor(es)','ok');
 }
 
 /* ============ CRUD DE PERFIS ============ */
