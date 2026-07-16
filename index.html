@@ -179,6 +179,11 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   /* M1: mobile scroll — app-shell flows naturally, body scrolls */
   .app-shell{overflow:visible;flex:1}
   .main-content{overflow:visible}
+    .main-content{min-width:0}.app-shell{min-width:0}
+    .topbar{padding:0 10px}.topbar-title{font-size:14px}.topbar-sub{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #sync-indicator,.status-dot{display:none}
+    #user-switcher{max-width:100px;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:4px 4px}
+    .topbar-right button{padding:4px 6px;font-size:9px;white-space:nowrap}.topbar-right{gap:4px}
   .view.active{display:block}
   .view-inner{overflow:visible}
 }
