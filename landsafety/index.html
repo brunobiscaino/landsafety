@@ -1692,7 +1692,9 @@ async function salvarInspecao(){
     const rowInsp=await sbInsert('inspecoes',dbInsp);
     if(rowInsp&&rowInsp[0]){
       /* Atualiza id local para o id real do banco */
+      var oldId=insp.id;
       insp.id=rowInsp[0].id;
+      state.ncs.forEach(function(n){if(String(n.inspId)===String(oldId))n.inspId=insp.id;});
       updateSyncIndicator();
       showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' salva no Supabase!','ok');
 
@@ -2150,16 +2152,31 @@ function refreshInspecoesList(){
 
 /* ============ DETALHE DE INSPEÇÃO ============ */
 let _inspDetalheCurrent=null;
-function openInspDetalhe(inspId){
+async function openInspDetalhe(inspId){
   const insp=state.inspecoes.find(function(i){return String(i.id)===String(inspId);});
   if(!insp)return;
   _inspDetalheCurrent=insp;
+  /* Carregar NCs do Supabase se necessario */
+  if(state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);}).length===0&&(insp.ncgv>0||insp.ncg>0||insp.ncl>0)){
+    var ncRows=await sbSelect('nao_conformidades','select=*&inspecao_id=eq.'+insp.id+'&order=created_at');
+    if(ncRows&&ncRows.length>0){
+      ncRows.forEach(function(r){
+        if(!state.ncs.find(function(n){return n.dbId===r.id;})){
+          state.ncs.push({dbId:r.id,code:r.codigo||r.categoria||'',desc:r.pergunta||'',
+            section:r.secao||r.categoria||'G',obs:r.obs||r.desvio||'',acao:r.acao||'',
+            resp:r.resp||'',prazo:r.prazo||'',foto:r.foto_nc||null,
+            colaboradores:r.colab_nomes||[],inspId:insp.id,inspNum:insp.num,
+            data:r.created_at,status:r.status_nc||'Aberta',ec:r.ec||null,ecHistorico:r.ec_historico||[]});
+        }
+      });
+    }
+  }
   document.getElementById('insp-detalhe-title').textContent='Inspe\u00e7\u00e3o #'+insp.num+' \u00b7 '+new Date(insp.dataFim).toLocaleDateString('pt-BR');
   const ispColor=insp.isp>=90?'#5ebc8a':insp.isp>=70?'#c9955a':'#e07c74';
   const colabNomes=(insp.colaboradores||[]).map(function(c){return c.nome;}).join(', ')||'\u2014';
   const agenteNomes=(insp.agentes||[]).map(function(a){return a.nome||a;}).join(', ')||'\u2014';
   const gps=insp.gps?insp.gps.lat.toFixed(5)+', '+insp.gps.lng.toFixed(5):'N\u00e3o capturada';
-  const ncsInsp=state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);});
+  var ncsInsp=state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);});
   let html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">';
   html+='<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+insp.isp+'%</div><div class="kpi-lbl">ISP</div></div>';
   html+='<div class="kpi-card"><div class="kpi-val red">'+insp.ncgv+'</div><div class="kpi-lbl">NC Grav\u00edssimas</div></div>';
@@ -2176,18 +2193,33 @@ function openInspDetalhe(inspId){
   html+='<div><div style="color:var(--sage);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">HHI</div><div style="color:var(--white)">'+(insp.hhi||0)+'</div></div>';
   html+='<div><div style="color:var(--sage);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">NCL</div><div style="color:#5ebc8a;font-weight:700">'+insp.ncl+'</div></div>';
   html+='</div></div>';
+  var gv=ncsInsp.filter(function(n){return n.section==='GV';});
+  var gc=ncsInsp.filter(function(n){return n.section==='G';});
+  var lv=ncsInsp.filter(function(n){return n.section==='L';});
+  function renderNCRow(n){
+    var cols=(n.colaboradores&&n.colaboradores.length)?n.colaboradores.join(', '):'\u2014';
+    var stCls={Aberta:'badge-nc',Corrigida:'badge-warn',Fechada:'badge-ok'}[n.status]||'badge-na';
+    return '<div style="padding:10px 0;border-bottom:1px solid rgba(195,204,154,.08)">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      +'<span class="badge badge-'+n.section.toLowerCase()+'">'+n.section+'</span>'
+      +'<strong style="color:var(--white);font-size:13px">'+n.code+'</strong>'
+      +'<span class="badge '+stCls+'">'+n.status+'</span>'
+      +(n.foto?'<span style="color:var(--sage)"> &#128247;</span>':'')+'</div>'
+      +'<div style="font-size:12px;color:var(--mist)">'+n.desc+'</div>'
+      +(n.obs?'<div style="font-size:11px;color:var(--sage);margin-top:2px;font-style:italic">&ldquo;'+n.obs+'&rdquo;</div>':'')
+      +'<div style="font-size:11px;color:var(--mist);margin-top:4px">'
+      +(n.resp?'<strong>Resp:</strong> '+n.resp+' ':'')
+      +(cols!='\u2014'?'<strong>Colab:</strong> '+cols:'')+'</div>';
+  }
   if(ncsInsp.length>0){
-    html+='<div class="card" style="padding:14px"><div class="card-title" style="color:#e07c74;margin-bottom:10px">&#9888; '+ncsInsp.length+' N\u00e3o Conformidade(s)</div>';
-    html+=ncsInsp.map(function(n){
-      const cols=(n.colaboradores&&n.colaboradores.length)?n.colaboradores.join(', '):'\u2014';
-      const statusCls={Aberta:'badge-nc',Corrigida:'badge-warn',Fechada:'badge-ok'}[n.status]||'badge-na';
-      return '<div style="padding:10px 0;border-bottom:1px solid rgba(195,204,154,.08)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge badge-'+n.section.toLowerCase()+'">'+n.section+'</span><strong style="color:var(--white);font-size:13px">'+n.code+'</strong><span class="badge '+statusCls+'">'+n.status+'</span></div><div style="font-size:12px;color:var(--mist)">'+n.desc+'</div>'+(n.obs?'<div style="font-size:11px;color:var(--sage);margin-top:2px;font-style:italic">"'+n.obs+'"</div>':'')+'<div style="font-size:11px;color:var(--mist);margin-top:2px">Colaborador(es): '+cols+(n.resp?' &middot; Resp: '+n.resp:'')+' '+(n.foto?'&#128247;':'')+'</div></div>';
-    }).join('');
+    html+='<div class="card" style="padding:14px">';
+    if(gv.length)html+='<div style="color:#e07c74;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;margin-bottom:6px">&#128308; GRAVISSIMAS (' +gv.length+')</div>'+gv.map(renderNCRow).join('');
+    if(gc.length)html+=(gv.length?'<div style="margin-top:10px"></div>':'')+'<div style="color:#c9955a;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;margin-bottom:6px">&#127992; GRAVES ('+gc.length+')</div>'+gc.map(renderNCRow).join('');
+    if(lv.length)html+=(gv.length+gc.length?'<div style="margin-top:10px"></div>':'')+'<div style="color:#5ebc8a;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;margin-bottom:6px">&#128994; LEVES ('+lv.length+')</div>'+lv.map(renderNCRow).join('');
     html+='</div>';
   }else{
     html+='<div style="text-align:center;color:#5ebc8a;font-family:\'Barlow Condensed\',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;padding:20px">&#10003; NENHUMA NC REGISTRADA</div>';
-  }
-  document.getElementById('insp-detalhe-body').innerHTML=html;
+  }  document.getElementById('insp-detalhe-body').innerHTML=html;
   /* show edit/delete only for Administrador */
   const activeUser=state.usuarios.find(function(u){return String(u.id)===document.getElementById('user-switcher').value;});
   const activePerfil=activeUser?PERFIS.find(function(p){return p.id===activeUser.perfilId;}):null;
