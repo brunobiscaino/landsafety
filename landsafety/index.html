@@ -1004,6 +1004,9 @@ async function loadPerfis(){
   if(rows&&rows.length>0){
     PERFIS=rows.map(function(r){return {id:r.id,nome:r.nome,permissoes:r.permissoes||[]};});
     perfilIdSeq=-1;
+    try{localStorage.setItem('ls_perfis',JSON.stringify(PERFIS));}catch(e){}
+  }else{
+    try{var cp=localStorage.getItem('ls_perfis');if(cp)PERFIS=JSON.parse(cp);}catch(e){}
   }
 }
 async function loadUsuarios(){
@@ -1012,6 +1015,9 @@ async function loadUsuarios(){
     state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0,metaMensal:r.meta_mensal||0,metaSemanal:r.meta_semanal||0,senha:r.senha||null};});
     state.selectedAgenteIds=[state.usuarios[0].id];
     userIdSeq=-1;
+    try{localStorage.setItem('ls_usuarios',JSON.stringify(state.usuarios));}catch(e){}
+  }else{
+    try{var cu=localStorage.getItem('ls_usuarios');if(cu){state.usuarios=JSON.parse(cu);state.selectedAgenteIds=[state.usuarios[0].id];}}catch(e){}
   }
 }
 async function loadColaboradores(){
@@ -1025,6 +1031,9 @@ async function loadColaboradores(){
       ativo:r.ativo!==false,motivoDesativacao:r.motivo_desativacao||null,dataDesativacao:r.data_desativacao||null
     };});
     colabIdSeq=-1;
+    try{localStorage.setItem('ls_colaboradores',JSON.stringify(state.colaboradores));}catch(e){}
+  }else{
+    try{var cc=localStorage.getItem('ls_colaboradores');if(cc)state.colaboradores=JSON.parse(cc);}catch(e){}
   }
 }
 async function loadInspecoes(){
@@ -1616,6 +1625,8 @@ async function salvarInspecao(){
     });
   });
 
+  /* Backup offline */
+  try{var lq=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');lq.push({insp:insp,ts:Date.now()});localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lq));}catch(e){}
   /* 2. Fechar modal e ir ao dashboard AGORA */
   fecharEIr();
   showToast('\u2705 Inspe\u00e7\u00e3o #'+insp.num+' registrada! Sincronizando...','ok');
@@ -1653,7 +1664,8 @@ async function salvarInspecao(){
       updateSyncIndicator();
       showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' salva no Supabase!','ok');
 
-      /* NCs no banco */
+
+        try{var lqc=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lqc.filter(function(x){return !x.insp||x.insp.id!==insp.id;})));}catch(e){}      /* NCs no banco */
       const ncPayloads=(ci.ncDetails||[]).map(function(d){
         return {
           inspecao_id:insp.id,
@@ -3030,7 +3042,27 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('search-nc').addEventListener('input',refreshNCList);
     document.getElementById('search-colab').addEventListener('input',refreshColabList);
   })();
+  window.addEventListener('online',function(){syncOfflineQueue();updateSyncIndicator();showToast('Conexão restabelecida!','ok');});
+  window.addEventListener('offline',function(){updateSyncIndicator();showToast('Sem internet — inspeções salvas localmente','warn');});
 });
+
+function syncOfflineQueue(){
+  if(!navigator.onLine)return;
+  try{
+    var q=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');
+    if(!q.length)return;
+    q.forEach(function(item){
+      if(!item||!item.insp)return;
+      var i=item.insp;
+      sbInsert('inspecoes',{data:(i.dataFim||'').substring(0,10),hora:new Date(i.dataFim||Date.now()).toTimeString().substring(0,8),inspetor_nome:(i.agentes||[]).map(function(a){return a.nome||a;}).join(', '),colab_nome:(i.colaboradores||[]).map(function(c){return c.nome||c;}).join(', '),empresa:EMPRESA,local_insp:i.local||null,atividade:i.atividade||null,total_ncs:i.nc||0,tolerancia_zero:(i.ncgv||0)>0,status:'concluida',sup_cena:i.supCena||null,agentes:(i.agentes||[]).map(function(a){return a.nome||a;}),colab_ids:(i.colaboradores||[]).map(function(c){return c.id;}),colab_nomes:(i.colaboradores||[]).map(function(c){return c.nome;}),ncgv:i.ncgv||0,ncg:i.ncg||0,ncl:i.ncl||0,isp:i.isp||0,hhi:i.hhi||0,gps_lat:i.gps?i.gps.lat:null,gps_lng:i.gps?i.gps.lng:null,data_fim:i.dataFim||new Date().toISOString()}).then(function(row){
+        if(row&&row[0]){
+          try{var lq=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lq.filter(function(x){return !x.insp||x.insp.id!==i.id;})));}catch(e){}
+          showToast('☁️ Inspeção #'+i.num+' sincronizada!','ok');updateSyncIndicator();
+        }
+      });
+    });
+  }catch(e){console.error('syncOfflineQueue:',e);}
+}
 
 </script>
 </body>
