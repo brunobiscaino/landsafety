@@ -142,7 +142,6 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
 .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;cursor:pointer;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mist);font-family:'Barlow Condensed',sans-serif;font-weight:700;border-top:3px solid transparent;transition:all .15s}
 .bn-item.active{color:var(--sage);border-top-color:var(--sage);background:rgba(195,204,154,.06)}
 .bn-icon{font-size:20px}
-  body.checklist-mode .bottom-nav{display:none!important}
 .empty-state{text-align:center;padding:60px 20px;color:var(--mist);opacity:.5}
 .empty-state .ei{font-size:40px;margin-bottom:12px}
 .empty-state p{font-size:13px;letter-spacing:1px}
@@ -166,6 +165,15 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
 .rank-fill{height:100%;background:#e07c74}
 .rank-val{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#e07c74;min-width:24px;text-align:right}
 ::-webkit-scrollbar{width:4px;height:4px}
+/* MODO CAMPO */
+body.modo-campo{filter:contrast(1.8) brightness(1.3) !important}
+body.modo-campo .topbar{background:#000 !important;border-bottom:3px solid #ff0 !important}
+body.modo-campo .cl-item-code{color:#ff0 !important;font-size:15px !important;font-weight:900 !important}
+body.modo-campo .cl-item-desc{color:#fff !important;font-size:14px !important}
+body.modo-campo .btn-c.active{background:#0f0 !important;color:#000 !important}
+body.modo-campo .btn-nc.active{background:#f00 !important;color:#fff !important}
+body.modo-campo .btn-na.active{background:#888 !important;color:#fff !important}
+body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !important;font-weight:700 !important}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(195,204,154,.2)}
 @media(max-width:768px){
@@ -179,11 +187,6 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   /* M1: mobile scroll — app-shell flows naturally, body scrolls */
   .app-shell{overflow:visible;flex:1}
   .main-content{overflow:visible}
-    .main-content{min-width:0}.app-shell{min-width:0}
-    .topbar{padding:0 10px}.topbar-title{font-size:14px}.topbar-sub{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #sync-indicator,.status-dot{display:none}
-    #user-switcher{max-width:100px;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:4px 4px}
-    .topbar-right button{padding:4px 6px;font-size:9px;white-space:nowrap}.topbar-right{gap:4px}
   .view.active{display:block}
   .view-inner{overflow:visible}
 }
@@ -240,7 +243,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     <span id="sync-indicator" style="font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap" title="Status de sincroniza\u00e7\u00e3o">&#9881;\ufe0f Conectando...</span>
     <div class="status-dot"></div>
     <select id="user-switcher" class="form-select" style="width:auto;padding:5px 10px;font-size:11px;letter-spacing:1px" onchange="applyPermissions()"></select>
-    <button onclick="fazerLogout()" style="background:none;border:1px solid rgba(195,204,154,.3);color:var(--sage);padding:4px 10px;font-size:10px;letter-spacing:1px;cursor:pointer;font-family:'Barlow Condensed',sans-serif" title="Sair">&#128682; SAIR</button>
+    <button id="btn-campo" onclick="toggleModoCampo()" style="background:none;border:1px solid rgba(195,204,154,.3);color:var(--sage);padding:4px 10px;font-size:10px;letter-spacing:1px;cursor:pointer;font-family:'Barlow Condensed',sans-serif" title="Modo campo - alto contraste">&#9728; CAMPO</button> <button onclick="fazerLogout()" style="background:none;border:1px solid rgba(195,204,154,.3);color:var(--sage);padding:4px 10px;font-size:10px;letter-spacing:1px;cursor:pointer;font-family:'Barlow Condensed',sans-serif" title="Sair">&#128682; SAIR</button>
   </div>
 </div>
 
@@ -355,7 +358,10 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
     </div>
 
     <div class="divider"></div>
-    <div class="card-title">Agentes executores da inspe&ccedil;&atilde;o</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+      <div class="card-title" style="margin-bottom:0">Agentes executores da inspe&ccedil;&atilde;o</div>
+      <div id="insp-inspetor-logado" style="font-size:11px;color:var(--sage);background:rgba(195,204,154,.1);padding:3px 8px;letter-spacing:.5px;border-radius:2px"></div>
+    </div>
     <div class="page-sub" style="margin-top:-8px;margin-bottom:10px">Selecione usu&aacute;rios cadastrados (perfis SST/Supervis&atilde;o). Para novos, cadastre em <a href="#" onclick="showView('usuarios');return false" style="color:var(--sage)">Usu&aacute;rios &amp; Perfis</a>.</div>
     <div id="agente-select-list" class="colab-select-list"></div>
     <div style="margin-bottom:20px"><span id="agente-select-count" style="font-size:11px;color:var(--sage);letter-spacing:1px;text-transform:uppercase">0 selecionado(s)</span></div>
@@ -614,20 +620,7 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
   </div>
 </div>
 
-<!-- MODAL PENDENTES (substitui confirm() nativo) -->
-  <div class="overlay" id="overlay-confirm-pendentes">
-    <div class="modal" style="max-width:420px">
-      <button class="modal-close" onclick="closeModal('overlay-confirm-pendentes')">&#10005;</button>
-      <div class="modal-title">Itens sem resposta</div>
-      <div id="confirm-pendentes-msg" style="font-size:13px;color:var(--mist);line-height:1.5;margin-bottom:20px"></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button class="btn btn-outline" onclick="closeModal('overlay-confirm-pendentes')">Cancelar</button>
-        <button class="btn btn-primary" id="btn-ir-item-pendente">Ir para o item</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- MODAL NC -->
+<!-- MODAL NC -->
 <div class="overlay" id="modal-nc-detalhe">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-nc-detalhe')">&#10005;</button>
@@ -1023,6 +1016,9 @@ async function loadPerfis(){
   if(rows&&rows.length>0){
     PERFIS=rows.map(function(r){return {id:r.id,nome:r.nome,permissoes:r.permissoes||[]};});
     perfilIdSeq=-1;
+    try{localStorage.setItem('ls_perfis',JSON.stringify(PERFIS));}catch(e){}
+  }else{
+    try{var cp=localStorage.getItem('ls_perfis');if(cp)PERFIS=JSON.parse(cp);}catch(e){}
   }
 }
 async function loadUsuarios(){
@@ -1031,6 +1027,9 @@ async function loadUsuarios(){
     state.usuarios=rows.map(function(r){return {id:r.id,nome:r.nome,mat:r.matricula||'',perfilId:r.perfil_id,metaAnual:r.meta_anual||0,metaMensal:r.meta_mensal||0,metaSemanal:r.meta_semanal||0,senha:r.senha||null};});
     state.selectedAgenteIds=[state.usuarios[0].id];
     userIdSeq=-1;
+    try{localStorage.setItem('ls_usuarios',JSON.stringify(state.usuarios));}catch(e){}
+  }else{
+    try{var cu=localStorage.getItem('ls_usuarios');if(cu){state.usuarios=JSON.parse(cu);state.selectedAgenteIds=[state.usuarios[0].id];}}catch(e){}
   }
 }
 async function loadColaboradores(){
@@ -1044,6 +1043,9 @@ async function loadColaboradores(){
       ativo:r.ativo!==false,motivoDesativacao:r.motivo_desativacao||null,dataDesativacao:r.data_desativacao||null
     };});
     colabIdSeq=-1;
+    try{localStorage.setItem('ls_colaboradores',JSON.stringify(state.colaboradores));}catch(e){}
+  }else{
+    try{var cc=localStorage.getItem('ls_colaboradores');if(cc)state.colaboradores=JSON.parse(cc);}catch(e){}
   }
 }
 async function loadInspecoes(){
@@ -1145,7 +1147,6 @@ function showView(name){
   if(v)v.classList.add('active');
   document.querySelectorAll('.nav-item[data-view="'+name+'"]').forEach(n=>n.classList.add('active'));
   const bn=document.getElementById('bn-'+name);if(bn)bn.classList.add('active');
-  document.body.classList.toggle('checklist-mode',name==='checklist');
   if(name==='dashboard')refreshDashboard();
   if(name==='inspecoes')refreshInspecoesList();
   if(name==='nao-conformidades')refreshNCList();
@@ -1477,8 +1478,14 @@ function finalizarChecklist(){
     const primeiroNR=naoRespondidos[0];
     const section=CHECKLIST.GV.find(function(i){return i.code===primeiroNR.code;})?'GV':
                   CHECKLIST.G.find(function(i){return i.code===primeiroNR.code;})?'G':'L';
-    abrirModalPendentes(naoRespondidos.length,primeiroNR,section);
-  return;
+    if(confirm(naoRespondidos.length+' item(ns) sem resposta. Todos os itens sao obrigatorios (C, NC ou NA).\n\nIr para o primeiro item nao respondido ('+primeiroNR.code+')?')){
+      showSection(section);
+      setTimeout(function(){
+        const el=document.getElementById('row-'+primeiroNR.code);
+        if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+      },150);
+    }
+    return;
   }
   const answered=all.filter(function(i){return state.checklist[i.code];}).length;
   const nc=all.filter(function(i){return state.checklist[i.code]==='NC';});
@@ -1490,11 +1497,16 @@ function finalizarChecklist(){
   const isp=total>0?Math.round(((total-nc.length)/total)*100):100;
   const cols=state.currentInsp.colaboradores||[];
   const agentes=state.currentInsp.agentes||[];
-  const hhi=cols.length*agentes.length*(state.currentInsp.duracao||1);
+  var durMs=state.currentInsp.dataInicio?Date.now()-new Date(state.currentInsp.dataInicio).getTime():3600000;
+  var durHoras=Math.max(0.1,Math.round(durMs/360000)/10);
+  const hhi=Math.round(cols.length*agentes.length*durHoras*10)/10;
   state._tempResult={ncgv:ncgv,ncg:ncg,ncl:ncl,nc:nc.length,na:na,isp:isp,hhi:hhi};
   const ispColor=isp>=90?'#5ebc8a':isp>=70?'#c9955a':'#e07c74';
   const body=document.getElementById('resultado-body');
-  body.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">'+
+  var gpsStr=inspGPS?inspGPS.lat.toFixed(5)+', '+inspGPS.lng.toFixed(5):'GPS n\u00e3o capturado';
+  var horaFimStr=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  var dataFimStr=new Date().toLocaleDateString('pt-BR');
+  body.innerHTML='<div style="font-size:11px;color:var(--sage);margin-bottom:12px;padding:8px 12px;background:rgba(195,204,154,.08);border:1px solid rgba(195,204,154,.2)">'+'&#128197; '+dataFimStr+' &middot; &#128336; '+horaFimStr+' &middot; &#128205; '+gpsStr+'</div>'+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">'+
     '<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+isp+'%</div><div class="kpi-lbl">ISP</div></div>'+
     '<div class="kpi-card"><div class="kpi-val">'+answered+'</div><div class="kpi-lbl">Itens respondidos</div></div>'+
     '<div class="kpi-card"><div class="kpi-val red">'+ncgv+'</div><div class="kpi-lbl">NC Grav\u00edssimas</div></div>'+
@@ -1502,23 +1514,9 @@ function finalizarChecklist(){
     '<div class="kpi-card"><div class="kpi-val green">'+ncl+'</div><div class="kpi-lbl">NC Leves</div></div>'+
     '<div class="kpi-card"><div class="kpi-val">'+na+'</div><div class="kpi-lbl">N\u00e3o Aplic\u00e1veis</div></div>'+
     '</div>';
+    console.log('[FINALIZAR] _tempResult:', JSON.stringify(state._tempResult), ' currentInsp ok:', !!state.currentInsp);
   openModal('modal-resultado');
 }
-
-  function abrirModalPendentes(qtd,primeiroNR,section){
-    const msgEl=document.getElementById('confirm-pendentes-msg');
-    if(msgEl)msgEl.textContent=qtd+' item(ns) sem resposta. Todos os itens sao obrigatorios (C, NC ou NA). Ir para o primeiro item nao respondido ('+primeiroNR.code+')?';
-    const btnIr=document.getElementById('btn-ir-item-pendente');
-    if(btnIr)btnIr.onclick=function(){
-      closeModal('overlay-confirm-pendentes');
-      showSection(section);
-      setTimeout(function(){
-        const el=document.getElementById('row-'+primeiroNR.code);
-        if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
-  },150);
-  };
-    openModal('overlay-confirm-pendentes');
-  }
 
 function fazerLogin(){
   const mat=document.getElementById('login-mat').value.trim();
@@ -1546,6 +1544,21 @@ function fazerLogin(){
   if(state.selectedAgenteIds.indexOf(user.id)<0){
     state.selectedAgenteIds=[user.id];
   }
+  var inspEl=document.getElementById('insp-inspetor-logado');
+  if(inspEl)inspEl.textContent='Inspetor logado: '+user.nome;
+  try{if(localStorage.getItem('ls_mc')){document.body.classList.add('modo-campo');var bc=document.getElementById('btn-campo');if(bc){bc.textContent='\u2600\ufe0f CAMPO ON';bc.style.background='#ff0';bc.style.color='#000';bc.style.border='2px solid #000';}}}catch(e){}
+}
+function toggleModoCampo(){
+  var on=document.body.classList.toggle('modo-campo');
+  var btn=document.getElementById('btn-campo');
+  if(btn){
+    btn.textContent=on?'\u2600\ufe0f CAMPO ON':'\u2600\ufe0f CAMPO';
+    btn.style.background=on?'#ff0':'none';
+    btn.style.color=on?'#000':'var(--sage)';
+    btn.style.fontWeight=on?'900':'normal';
+    btn.style.border=on?'2px solid #000':'1px solid rgba(195,204,154,.3)';
+  }
+  try{on?localStorage.setItem('ls_mc','1'):localStorage.removeItem('ls_mc');}catch(e){}
 }
 function fazerLogout(){
   _loggedUserId=null;
@@ -1555,8 +1568,8 @@ function fazerLogout(){
   document.getElementById('app-shell-wrapper').style.display='none';
   document.getElementById('login-screen').style.display='flex';
 }
+let _salvandoInspecao=false;
 let _inspOfflineQueue=[];
-  let _salvandoInspecao=false;
 
 async function salvarInspecao(){
   /* Proteção duplo clique - mas com timeout de segurança de 30s */
@@ -1593,16 +1606,26 @@ async function salvarInspecao(){
     refreshInspecoesList();
   };
 
-  /* Validações básicas */
-  const r=state._tempResult;
-  const ci=state.currentInsp;
+  /* Validações básicas - com recuperação de backup */
+  let r=state._tempResult;
+  let ci=state.currentInsp;
   if(!r||!ci){
-    showToast('\u274c Dados da inspe\u00e7\u00e3o n\u00e3o encontrados. Tente novamente.','error');
-    resetBtn();
+    try{
+      const br=sessionStorage.getItem('_bkr');
+      const bc=sessionStorage.getItem('_bki');
+      if(br&&bc){
+        r=JSON.parse(br);ci=JSON.parse(bc);
+        state._tempResult=r;state.currentInsp=ci;
+        showToast('\u26a0\ufe0f Dados recuperados. Salvando...','warn');
+      }
+    }catch(e){}
+  }
+  if(!r||!ci){
+    showToast('\u274c Dados da inspe\u00e7\u00e3o perdidos. Refaça a inspe\u00e7\u00e3o.','error');
+    resetBtn();closeModal('modal-resultado');showView('dashboard');
     return;
   }
-
-  const now=new Date();
+    const now=new Date();
   const colabIds=(ci.colaboradores||[]).map(function(c){return c.id;});
   const colabNomes=(ci.colaboradores||[]).map(function(c){return c.nome;});
   const agenteNomes=(ci.agentes||[]).map(function(a){return a.nome;});
@@ -1634,6 +1657,8 @@ async function salvarInspecao(){
     });
   });
 
+  /* Backup offline */
+  try{var lq=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');lq.push({insp:insp,ts:Date.now()});localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lq));}catch(e){}
   /* 2. Fechar modal e ir ao dashboard AGORA */
   fecharEIr();
   showToast('\u2705 Inspe\u00e7\u00e3o #'+insp.num+' registrada! Sincronizando...','ok');
@@ -1667,11 +1692,14 @@ async function salvarInspecao(){
     const rowInsp=await sbInsert('inspecoes',dbInsp);
     if(rowInsp&&rowInsp[0]){
       /* Atualiza id local para o id real do banco */
+      var oldId=insp.id;
       insp.id=rowInsp[0].id;
+      state.ncs.forEach(function(n){if(String(n.inspId)===String(oldId))n.inspId=insp.id;});
       updateSyncIndicator();
       showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' salva no Supabase!','ok');
 
-      /* NCs no banco */
+
+        try{var lqc=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lqc.filter(function(x){return !x.insp||x.insp.id!==insp.id;})));}catch(e){}      /* NCs no banco */
       const ncPayloads=(ci.ncDetails||[]).map(function(d){
         return {
           inspecao_id:insp.id,
@@ -2124,16 +2152,31 @@ function refreshInspecoesList(){
 
 /* ============ DETALHE DE INSPEÇÃO ============ */
 let _inspDetalheCurrent=null;
-function openInspDetalhe(inspId){
+async function openInspDetalhe(inspId){
   const insp=state.inspecoes.find(function(i){return String(i.id)===String(inspId);});
   if(!insp)return;
   _inspDetalheCurrent=insp;
+  /* Carregar NCs do Supabase se necessario */
+  if(state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);}).length===0&&(insp.ncgv>0||insp.ncg>0||insp.ncl>0)){
+    var ncRows=await sbSelect('nao_conformidades','select=*&inspecao_id=eq.'+insp.id+'&order=created_at');
+    if(ncRows&&ncRows.length>0){
+      ncRows.forEach(function(r){
+        if(!state.ncs.find(function(n){return n.dbId===r.id;})){
+          state.ncs.push({dbId:r.id,code:r.codigo||r.categoria||'',desc:r.pergunta||'',
+            section:r.secao||r.categoria||'G',obs:r.obs||r.desvio||'',acao:r.acao||'',
+            resp:r.resp||'',prazo:r.prazo||'',foto:r.foto_nc||null,
+            colaboradores:r.colab_nomes||[],inspId:insp.id,inspNum:insp.num,
+            data:r.created_at,status:r.status_nc||'Aberta',ec:r.ec||null,ecHistorico:r.ec_historico||[]});
+        }
+      });
+    }
+  }
   document.getElementById('insp-detalhe-title').textContent='Inspe\u00e7\u00e3o #'+insp.num+' \u00b7 '+new Date(insp.dataFim).toLocaleDateString('pt-BR');
   const ispColor=insp.isp>=90?'#5ebc8a':insp.isp>=70?'#c9955a':'#e07c74';
   const colabNomes=(insp.colaboradores||[]).map(function(c){return c.nome;}).join(', ')||'\u2014';
   const agenteNomes=(insp.agentes||[]).map(function(a){return a.nome||a;}).join(', ')||'\u2014';
   const gps=insp.gps?insp.gps.lat.toFixed(5)+', '+insp.gps.lng.toFixed(5):'N\u00e3o capturada';
-  const ncsInsp=state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);});
+  var ncsInsp=state.ncs.filter(function(n){return String(n.inspId)===String(insp.id);});
   let html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">';
   html+='<div class="kpi-card"><div class="kpi-val" style="color:'+ispColor+'">'+insp.isp+'%</div><div class="kpi-lbl">ISP</div></div>';
   html+='<div class="kpi-card"><div class="kpi-val red">'+insp.ncgv+'</div><div class="kpi-lbl">NC Grav\u00edssimas</div></div>';
@@ -2150,18 +2193,33 @@ function openInspDetalhe(inspId){
   html+='<div><div style="color:var(--sage);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">HHI</div><div style="color:var(--white)">'+(insp.hhi||0)+'</div></div>';
   html+='<div><div style="color:var(--sage);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">NCL</div><div style="color:#5ebc8a;font-weight:700">'+insp.ncl+'</div></div>';
   html+='</div></div>';
+  var gv=ncsInsp.filter(function(n){return n.section==='GV';});
+  var gc=ncsInsp.filter(function(n){return n.section==='G';});
+  var lv=ncsInsp.filter(function(n){return n.section==='L';});
+  function renderNCRow(n){
+    var cols=(n.colaboradores&&n.colaboradores.length)?n.colaboradores.join(', '):'\u2014';
+    var stCls={Aberta:'badge-nc',Corrigida:'badge-warn',Fechada:'badge-ok'}[n.status]||'badge-na';
+    return '<div style="padding:10px 0;border-bottom:1px solid rgba(195,204,154,.08)">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      +'<span class="badge badge-'+n.section.toLowerCase()+'">'+n.section+'</span>'
+      +'<strong style="color:var(--white);font-size:13px">'+n.code+'</strong>'
+      +'<span class="badge '+stCls+'">'+n.status+'</span>'
+      +(n.foto?'<span style="color:var(--sage)"> &#128247;</span>':'')+'</div>'
+      +'<div style="font-size:12px;color:var(--mist)">'+n.desc+'</div>'
+      +(n.obs?'<div style="font-size:11px;color:var(--sage);margin-top:2px;font-style:italic">&ldquo;'+n.obs+'&rdquo;</div>':'')
+      +'<div style="font-size:11px;color:var(--mist);margin-top:4px">'
+      +(n.resp?'<strong>Resp:</strong> '+n.resp+' ':'')
+      +(cols!='\u2014'?'<strong>Colab:</strong> '+cols:'')+'</div>';
+  }
   if(ncsInsp.length>0){
-    html+='<div class="card" style="padding:14px"><div class="card-title" style="color:#e07c74;margin-bottom:10px">&#9888; '+ncsInsp.length+' N\u00e3o Conformidade(s)</div>';
-    html+=ncsInsp.map(function(n){
-      const cols=(n.colaboradores&&n.colaboradores.length)?n.colaboradores.join(', '):'\u2014';
-      const statusCls={Aberta:'badge-nc',Corrigida:'badge-warn',Fechada:'badge-ok'}[n.status]||'badge-na';
-      return '<div style="padding:10px 0;border-bottom:1px solid rgba(195,204,154,.08)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge badge-'+n.section.toLowerCase()+'">'+n.section+'</span><strong style="color:var(--white);font-size:13px">'+n.code+'</strong><span class="badge '+statusCls+'">'+n.status+'</span></div><div style="font-size:12px;color:var(--mist)">'+n.desc+'</div>'+(n.obs?'<div style="font-size:11px;color:var(--sage);margin-top:2px;font-style:italic">"'+n.obs+'"</div>':'')+'<div style="font-size:11px;color:var(--mist);margin-top:2px">Colaborador(es): '+cols+(n.resp?' &middot; Resp: '+n.resp:'')+' '+(n.foto?'&#128247;':'')+'</div></div>';
-    }).join('');
+    html+='<div class="card" style="padding:14px">';
+    if(gv.length)html+='<div style="color:#e07c74;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;margin-bottom:6px">&#128308; GRAVISSIMAS (' +gv.length+')</div>'+gv.map(renderNCRow).join('');
+    if(gc.length)html+=(gv.length?'<div style="margin-top:10px"></div>':'')+'<div style="color:#c9955a;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;margin-bottom:6px">&#127992; GRAVES ('+gc.length+')</div>'+gc.map(renderNCRow).join('');
+    if(lv.length)html+=(gv.length+gc.length?'<div style="margin-top:10px"></div>':'')+'<div style="color:#5ebc8a;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;margin-bottom:6px">&#128994; LEVES ('+lv.length+')</div>'+lv.map(renderNCRow).join('');
     html+='</div>';
   }else{
     html+='<div style="text-align:center;color:#5ebc8a;font-family:\'Barlow Condensed\',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;padding:20px">&#10003; NENHUMA NC REGISTRADA</div>';
-  }
-  document.getElementById('insp-detalhe-body').innerHTML=html;
+  }  document.getElementById('insp-detalhe-body').innerHTML=html;
   /* show edit/delete only for Administrador */
   const activeUser=state.usuarios.find(function(u){return String(u.id)===document.getElementById('user-switcher').value;});
   const activePerfil=activeUser?PERFIS.find(function(p){return p.id===activeUser.perfilId;}):null;
@@ -3048,7 +3106,27 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('search-nc').addEventListener('input',refreshNCList);
     document.getElementById('search-colab').addEventListener('input',refreshColabList);
   })();
+  window.addEventListener('online',function(){syncOfflineQueue();updateSyncIndicator();showToast('Conexão restabelecida!','ok');});
+  window.addEventListener('offline',function(){updateSyncIndicator();showToast('Sem internet — inspeções salvas localmente','warn');});
 });
+
+function syncOfflineQueue(){
+  if(!navigator.onLine)return;
+  try{
+    var q=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');
+    if(!q.length)return;
+    q.forEach(function(item){
+      if(!item||!item.insp)return;
+      var i=item.insp;
+      sbInsert('inspecoes',{data:(i.dataFim||'').substring(0,10),hora:new Date(i.dataFim||Date.now()).toTimeString().substring(0,8),inspetor_nome:(i.agentes||[]).map(function(a){return a.nome||a;}).join(', '),colab_nome:(i.colaboradores||[]).map(function(c){return c.nome||c;}).join(', '),empresa:EMPRESA,local_insp:i.local||null,atividade:i.atividade||null,total_ncs:i.nc||0,tolerancia_zero:(i.ncgv||0)>0,status:'concluida',sup_cena:i.supCena||null,agentes:(i.agentes||[]).map(function(a){return a.nome||a;}),colab_ids:(i.colaboradores||[]).map(function(c){return c.id;}),colab_nomes:(i.colaboradores||[]).map(function(c){return c.nome;}),ncgv:i.ncgv||0,ncg:i.ncg||0,ncl:i.ncl||0,isp:i.isp||0,hhi:i.hhi||0,gps_lat:i.gps?i.gps.lat:null,gps_lng:i.gps?i.gps.lng:null,data_fim:i.dataFim||new Date().toISOString()}).then(function(row){
+        if(row&&row[0]){
+          try{var lq=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lq.filter(function(x){return !x.insp||x.insp.id!==i.id;})));}catch(e){}
+          showToast('☁️ Inspeção #'+i.num+' sincronizada!','ok');updateSyncIndicator();
+        }
+      });
+    });
+  }catch(e){console.error('syncOfflineQueue:',e);}
+}
 
 </script>
 </body>
