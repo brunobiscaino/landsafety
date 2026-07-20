@@ -571,8 +571,8 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
   </div>
   <div class="card" style="padding:0;overflow:auto">
     <table class="data-table" style="min-width:820px">
-      <thead><tr><th>Item</th><th>Local</th><th>Validade</th><th>Status</th><th>&Uacute;ltima inspe&ccedil;&atilde;o QR</th><th>Etiqueta</th><th></th></tr></thead>
-      <tbody id="tbody-extintores"><tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item cadastrado</td></tr></tbody>
+      <thead><tr><th>Item</th><th>Local</th><th>Validade</th><th>Status</th><th>Teste Hidrost&aacute;tico</th><th>&Uacute;ltima inspe&ccedil;&atilde;o QR</th><th>Etiqueta</th><th></th></tr></thead>
+      <tbody id="tbody-extintores"><tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item cadastrado</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -925,6 +925,11 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
       <div class="form-group"><label class="form-label">Local</label><input class="form-input" id="me-local" placeholder="Ex: Almoxarifado Lado Direito"></div>
       <div class="form-group"><label class="form-label">Validade</label><input class="form-input" type="date" id="me-validade"></div>
     </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Pr&oacute;ximo teste hidrost&aacute;tico</label>
+      <input class="form-input" type="date" id="me-teste-hidro">
+      <span class="page-sub" style="margin-top:2px">Extintores: a cada 5 anos (NR-23/NBR 12779). Mangueiras: anual.</span>
+    </div>
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarExtintor()">SALVAR</button>
       <button class="btn btn-outline" onclick="closeModal('modal-extintor')">Cancelar</button>
@@ -1202,6 +1207,7 @@ async function loadExtintores(){
       id:r.id,tipo:r.tipo,classe:r.classe||null,hdNumero:r.hd_numero||null,
       cargaNominal:r.carga_nominal||null,numeroIdentificacao:r.numero_identificacao||null,
       seloInmetro:r.selo_inmetro||null,local:r.local,dataValidade:r.data_validade||null,
+      dataProximoTesteHidro:r.data_proximo_teste_hidrostatico||null,
       status:r.status||'ativo',ultimaInspecaoEm:null,ultimaInspecaoConforme:null
     };});
   }
@@ -1249,6 +1255,22 @@ function refreshExtintoresKPIs(){
     badge.style.color=vencidos>0?'#e07c74':total>0?'#c9955a':'var(--sage)';
   }
 }
+function getHidroStatus(e){
+  if(!e.dataProximoTesteHidro)return 'sem_dado';
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const venc=new Date(e.dataProximoTesteHidro+'T00:00:00');
+  const dias=Math.ceil((venc-hoje)/(1000*60*60*24));
+  if(dias<0)return 'vencido';
+  if(dias<=60)return 'atencao';
+  return 'ok';
+}
+function hidroBadgeHTML(e){
+  const st=getHidroStatus(e);
+  const venc=e.dataProximoTesteHidro?new Date(e.dataProximoTesteHidro+'T00:00:00').toLocaleDateString('pt-BR'):null;
+  const map={ok:'badge-ok',atencao:'badge-warn',vencido:'badge-nc',sem_dado:'badge-warn'};
+  const txt=venc||'N\u00e3o informado';
+  return '<span class="badge '+map[st]+'">'+txt+'</span>';
+}
 function extStatusBadgeHTML(status){
   const map={
     ok:['badge-ok','V\u00e1lido'],
@@ -1271,14 +1293,14 @@ function refreshExtintoresList(){
   });
   if(tipoF)list=list.filter(function(e){return e.tipo===tipoF;});
   if(statusF)list=list.filter(function(e){return getExtStatus(e)===statusF;});
-  if(list.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item encontrado</td></tr>';return;}
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item encontrado</td></tr>';return;}
   tbody.innerHTML=list.map(function(e){
     const st=getExtStatus(e);
     const nome=e.tipo==='mangueira'?(e.hdNumero||'Mangueira'):((e.classe||'')+' &middot; '+(e.cargaNominal||'')+(e.numeroIdentificacao?' &middot; N\u00ba '+e.numeroIdentificacao:''));
     const icon=e.tipo==='mangueira'?'&#128167;':'&#129535;';
     const venc=e.dataValidade?new Date(e.dataValidade+'T00:00:00').toLocaleDateString('pt-BR'):'\u2014';
     const ultima=e.ultimaInspecaoEm?new Date(e.ultimaInspecaoEm).toLocaleDateString('pt-BR')+(e.ultimaInspecaoConforme===false?' &#9888;':' &#10003;'):'\u2014';
-    return '<tr><td>'+icon+' '+nome+'</td><td>'+e.local+'</td><td>'+venc+'</td><td>'+extStatusBadgeHTML(st)+'</td><td>'+ultima+'</td><td><button class="btn btn-outline btn-sm" onclick="verEtiqueta(\''+e.id+'\')">&#128268; QR</button></td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditExtintor(\''+e.id+'\')">&#9998;</button></td></tr>';
+    return '<tr><td>'+icon+' '+nome+'</td><td>'+e.local+'</td><td>'+venc+'</td><td>'+extStatusBadgeHTML(st)+'</td><td>'+hidroBadgeHTML(e)+'</td><td>'+ultima+'</td><td><button class="btn btn-outline btn-sm" onclick="verEtiqueta(\''+e.id+'\')">&#128268; QR</button></td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditExtintor(\''+e.id+'\')">&#9998;</button></td></tr>';
   }).join('');
 }
 function toggleTipoExtintorFields(){
@@ -1300,6 +1322,7 @@ function openEditExtintor(id){
   document.getElementById('me-hd').value=e.hdNumero||'';
   document.getElementById('me-local').value=e.local||'';
   document.getElementById('me-validade').value=e.dataValidade||'';
+  document.getElementById('me-teste-hidro').value=e.dataProximoTesteHidro||'';
   openModal('modal-extintor');
 }
 async function salvarExtintor(){
@@ -1309,7 +1332,8 @@ async function salvarExtintor(){
   const payload={
     tipo:tipo,
     local:local,
-    data_validade:document.getElementById('me-validade').value||null
+    data_validade:document.getElementById('me-validade').value||null,
+    data_proximo_teste_hidrostatico:document.getElementById('me-teste-hidro').value||null
   };
   if(tipo==='extintor'){
     payload.classe=document.getElementById('me-classe').value;
