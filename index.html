@@ -266,6 +266,7 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
     <div class="sidebar-label">Controle</div>
     <div class="nav-item" data-view="pendencias" onclick="showView('pendencias')"><span class="nav-icon">&#128204;</span> Minhas Pend&ecirc;ncias <span class="nav-badge" id="badge-pendencias" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="alertas" onclick="showView('alertas')"><span class="nav-icon">&#128276;</span> Alertas <span class="nav-badge" id="badge-alertas" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
+    <div class="nav-item" data-view="extintores" onclick="showView('extintores')"><span class="nav-icon">&#129535;</span> Extintores <span class="nav-badge" id="badge-extintores" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="auditoria" onclick="showView('auditoria')"><span class="nav-icon">&#128270;</span> Auditoria <span class="nav-badge" style="background:rgba(157,101,48,.3);color:#c9955a">EM BREVE</span></div>
   </div>
 </nav>
@@ -537,6 +538,43 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
     <div class="page-sub">Ciclo de reinspe&ccedil;&atilde;o de 30 dias por colaborador</div>
   </div>
   <div id="alertas-list"><div class="empty-state"><div class="ei">&#128276;</div><p>Nenhum alerta no momento</p></div></div>
+</div>
+</div>
+
+<!-- EXTINTORES & MANGUEIRAS -->
+<div class="view" id="view-extintores">
+<div class="view-inner">
+  <div class="page-header"><div class="page-eyebrow">Seguran&ccedil;a Predial &middot; CENA</div><div class="page-title">Extintores &amp; Mangueiras</div>
+    <div class="page-sub">Controle de vencimento e inspe&ccedil;&atilde;o de campo via QR Code</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card clickable" onclick="filtrarExtintores('vencido')"><div class="kpi-val red" id="ext-kpi-vencidos">0</div><div class="kpi-lbl">Vencidos</div></div>
+    <div class="kpi-card clickable" onclick="filtrarExtintores('atencao')"><div class="kpi-val warn" id="ext-kpi-atencao">0</div><div class="kpi-lbl">A vencer em 30 dias</div></div>
+    <div class="kpi-card clickable" onclick="filtrarExtintores('sem_dado')"><div class="kpi-val warn" id="ext-kpi-semdado">0</div><div class="kpi-lbl">Dados incompletos</div></div>
+    <div class="kpi-card"><div class="kpi-val green" id="ext-kpi-inspecionados">0</div><div class="kpi-lbl">Inspecionados via QR (30d)</div></div>
+  </div>
+  <div class="search-bar">
+    <input class="search-input" placeholder="Buscar por local, n&uacute;mero, tipo..." id="search-ext">
+    <select class="form-select" style="width:auto" id="filter-ext-tipo">
+      <option value="">Todos os tipos</option>
+      <option value="extintor">Extintores</option>
+      <option value="mangueira">Mangueiras</option>
+    </select>
+    <select class="form-select" style="width:auto" id="filter-ext-status">
+      <option value="">Todos os status</option>
+      <option value="ok">V&aacute;lido</option>
+      <option value="atencao">A vencer</option>
+      <option value="vencido">Vencido</option>
+      <option value="sem_dado">Sem dado</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="openModal('modal-extintor')">+ Novo Item</button>
+  </div>
+  <div class="card" style="padding:0;overflow:auto">
+    <table class="data-table" style="min-width:820px">
+      <thead><tr><th>Item</th><th>Local</th><th>Validade</th><th>Status</th><th>&Uacute;ltima inspe&ccedil;&atilde;o QR</th><th>Etiqueta</th><th></th></tr></thead>
+      <tbody id="tbody-extintores"><tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item cadastrado</td></tr></tbody>
+    </table>
+  </div>
 </div>
 </div>
 
@@ -853,6 +891,59 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
   </div>
 </div>
 
+<!-- MODAL EXTINTOR / MANGUEIRA -->
+<div class="overlay" id="modal-extintor">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-extintor')">&#10005;</button>
+    <div class="modal-title" id="modal-extintor-title">&#129535; Novo Item</div>
+    <input type="hidden" id="me-id" value="">
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="me-tipo" onchange="toggleTipoExtintorFields()">
+        <option value="extintor">Extintor</option>
+        <option value="mangueira">Mangueira de inc&ecirc;ndio</option>
+      </select>
+    </div>
+    <div id="me-campos-extintor">
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">Classe</label>
+          <select class="form-select" id="me-classe">
+            <option>&Aacute;GUA</option><option>BC</option><option>ABC</option><option>CO2</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Carga nominal</label><input class="form-input" id="me-carga" placeholder="Ex: 10 Litros, 6 Kilos"></div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">N&ordm; identifica&ccedil;&atilde;o</label><input class="form-input" id="me-numero" placeholder="Ex: 20560"></div>
+        <div class="form-group"><label class="form-label">Selo INMETRO</label><input class="form-input" id="me-selo" placeholder="Ex: 308991431"></div>
+      </div>
+    </div>
+    <div id="me-campos-mangueira" style="display:none">
+      <div class="form-group" style="margin-bottom:14px"><label class="form-label">Identifica&ccedil;&atilde;o (HD)</label><input class="form-input" id="me-hd" placeholder="Ex: HD 01"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">Local</label><input class="form-input" id="me-local" placeholder="Ex: Almoxarifado Lado Direito"></div>
+      <div class="form-group"><label class="form-label">Validade</label><input class="form-input" type="date" id="me-validade"></div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="salvarExtintor()">SALVAR</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-extintor')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ETIQUETA / QR -->
+<div class="overlay" id="modal-etiqueta">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <button class="modal-close" onclick="closeModal('modal-etiqueta')">&#10005;</button>
+    <div class="modal-title" id="etiqueta-title">&#128203; Etiqueta</div>
+    <div id="etiqueta-qr-container" style="background:#fff;padding:16px;display:inline-block;margin-bottom:14px"></div>
+    <div id="etiqueta-info" style="font-size:12px;color:var(--mist);margin-bottom:14px"></div>
+    <div style="font-size:11px;color:var(--sage);word-break:break-all;margin-bottom:16px" id="etiqueta-url"></div>
+    <button class="btn btn-outline" onclick="window.print()">&#128424; Imprimir</button>
+  </div>
+</div>
+
 <div class="overlay" id="modal-resultado">
   <div class="modal" style="max-width:640px">
     <div class="modal-title">&#10003; Inspe&ccedil;&atilde;o Finalizada</div>
@@ -865,6 +956,7 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
 </div>
 </div><!-- /app-shell-wrapper -->
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const CHECKLIST={GV:[
 {code:'GV01',desc:'Durante a execu\u00e7\u00e3o das tarefas os colaboradores est\u00e3o sem adornos?'},
@@ -1098,6 +1190,167 @@ async function loadNCs(){
   }
 }
 
+/* ============ EXTINTORES & MANGUEIRAS ============ */
+let state_extintores=[];
+let editingExtintorId=null;
+const EXT_BASE_URL='https://brunobiscaino.github.io/landsafety/extintor.html?id=';
+
+async function loadExtintores(){
+  const rows=await sbSelect('equipamentos_incendio','select=*&order=local');
+  if(rows){
+    state_extintores=rows.map(function(r){return {
+      id:r.id,tipo:r.tipo,classe:r.classe||null,hdNumero:r.hd_numero||null,
+      cargaNominal:r.carga_nominal||null,numeroIdentificacao:r.numero_identificacao||null,
+      seloInmetro:r.selo_inmetro||null,local:r.local,dataValidade:r.data_validade||null,
+      status:r.status||'ativo',ultimaInspecaoEm:null,ultimaInspecaoConforme:null
+    };});
+  }
+  /* carregar última inspeção via QR de cada item (best effort) */
+  const insps=await sbSelect('inspecoes_extintor','select=equipamento_id,conforme,criado_em&order=criado_em.desc&limit=500');
+  if(insps){
+    const map={};
+    insps.forEach(function(i){if(!map[i.equipamento_id])map[i.equipamento_id]=i;});
+    state_extintores.forEach(function(e){
+      const last=map[e.id];
+      if(last){e.ultimaInspecaoEm=last.criado_em;e.ultimaInspecaoConforme=last.conforme;}
+    });
+  }
+}
+function getExtStatus(e){
+  if(!e.dataValidade)return 'sem_dado';
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const venc=new Date(e.dataValidade+'T00:00:00');
+  const dias=Math.ceil((venc-hoje)/(1000*60*60*24));
+  if(dias<0)return 'vencido';
+  if(dias<=30)return 'atencao';
+  return 'ok';
+}
+let extFiltroStatus='';
+function filtrarExtintores(status){
+  extFiltroStatus=extFiltroStatus===status?'':status;
+  document.getElementById('filter-ext-status').value=extFiltroStatus;
+  refreshExtintoresList();
+}
+function refreshExtintoresKPIs(){
+  const vencidos=state_extintores.filter(function(e){return getExtStatus(e)==='vencido';}).length;
+  const atencao=state_extintores.filter(function(e){return getExtStatus(e)==='atencao';}).length;
+  const semDado=state_extintores.filter(function(e){return getExtStatus(e)==='sem_dado';}).length;
+  const trintaDiasAtras=new Date();trintaDiasAtras.setDate(trintaDiasAtras.getDate()-30);
+  const inspecionados=state_extintores.filter(function(e){return e.ultimaInspecaoEm&&new Date(e.ultimaInspecaoEm)>=trintaDiasAtras;}).length;
+  document.getElementById('ext-kpi-vencidos').textContent=vencidos;
+  document.getElementById('ext-kpi-atencao').textContent=atencao;
+  document.getElementById('ext-kpi-semdado').textContent=semDado;
+  document.getElementById('ext-kpi-inspecionados').textContent=inspecionados;
+  const badge=document.getElementById('badge-extintores');
+  if(badge){
+    const total=vencidos+atencao;
+    badge.textContent=total;
+    badge.style.background=vencidos>0?'rgba(176,58,46,.3)':total>0?'rgba(157,101,48,.3)':'rgba(195,204,154,.15)';
+    badge.style.color=vencidos>0?'#e07c74':total>0?'#c9955a':'var(--sage)';
+  }
+}
+function extStatusBadgeHTML(status){
+  const map={
+    ok:['badge-ok','V\u00e1lido'],
+    atencao:['badge-warn','A vencer'],
+    vencido:['badge-nc','Vencido'],
+    sem_dado:['badge-warn','Sem dado']
+  };
+  const m=map[status]||map.sem_dado;
+  return '<span class="badge '+m[0]+'">'+m[1]+'</span>';
+}
+function refreshExtintoresList(){
+  refreshExtintoresKPIs();
+  const tbody=document.getElementById('tbody-extintores');
+  const search=(document.getElementById('search-ext')||{value:''}).value.toLowerCase();
+  const tipoF=(document.getElementById('filter-ext-tipo')||{value:''}).value;
+  const statusF=(document.getElementById('filter-ext-status')||{value:''}).value;
+  let list=state_extintores;
+  if(search)list=list.filter(function(e){
+    return (e.local||'').toLowerCase().indexOf(search)>=0||(e.numeroIdentificacao||'').toLowerCase().indexOf(search)>=0||(e.hdNumero||'').toLowerCase().indexOf(search)>=0||(e.classe||'').toLowerCase().indexOf(search)>=0;
+  });
+  if(tipoF)list=list.filter(function(e){return e.tipo===tipoF;});
+  if(statusF)list=list.filter(function(e){return getExtStatus(e)===statusF;});
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item encontrado</td></tr>';return;}
+  tbody.innerHTML=list.map(function(e){
+    const st=getExtStatus(e);
+    const nome=e.tipo==='mangueira'?(e.hdNumero||'Mangueira'):((e.classe||'')+' &middot; '+(e.cargaNominal||'')+(e.numeroIdentificacao?' &middot; N\u00ba '+e.numeroIdentificacao:''));
+    const icon=e.tipo==='mangueira'?'&#128167;':'&#129535;';
+    const venc=e.dataValidade?new Date(e.dataValidade+'T00:00:00').toLocaleDateString('pt-BR'):'\u2014';
+    const ultima=e.ultimaInspecaoEm?new Date(e.ultimaInspecaoEm).toLocaleDateString('pt-BR')+(e.ultimaInspecaoConforme===false?' &#9888;':' &#10003;'):'\u2014';
+    return '<tr><td>'+icon+' '+nome+'</td><td>'+e.local+'</td><td>'+venc+'</td><td>'+extStatusBadgeHTML(st)+'</td><td>'+ultima+'</td><td><button class="btn btn-outline btn-sm" onclick="verEtiqueta(\''+e.id+'\')">&#128268; QR</button></td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditExtintor(\''+e.id+'\')">&#9998;</button></td></tr>';
+  }).join('');
+}
+function toggleTipoExtintorFields(){
+  const tipo=document.getElementById('me-tipo').value;
+  document.getElementById('me-campos-extintor').style.display=tipo==='extintor'?'':'none';
+  document.getElementById('me-campos-mangueira').style.display=tipo==='mangueira'?'':'none';
+}
+function openEditExtintor(id){
+  const e=state_extintores.find(function(e){return String(e.id)===String(id);});
+  if(!e)return;
+  editingExtintorId=id;
+  document.getElementById('modal-extintor-title').textContent='\u270f\ufe0f Editar Item';
+  document.getElementById('me-tipo').value=e.tipo;
+  toggleTipoExtintorFields();
+  document.getElementById('me-classe').value=e.classe||'\u00c1GUA';
+  document.getElementById('me-carga').value=e.cargaNominal||'';
+  document.getElementById('me-numero').value=e.numeroIdentificacao||'';
+  document.getElementById('me-selo').value=e.seloInmetro||'';
+  document.getElementById('me-hd').value=e.hdNumero||'';
+  document.getElementById('me-local').value=e.local||'';
+  document.getElementById('me-validade').value=e.dataValidade||'';
+  openModal('modal-extintor');
+}
+async function salvarExtintor(){
+  const tipo=document.getElementById('me-tipo').value;
+  const local=document.getElementById('me-local').value.trim();
+  if(!local){alert('Informe o local do item.');return;}
+  const payload={
+    tipo:tipo,
+    local:local,
+    data_validade:document.getElementById('me-validade').value||null
+  };
+  if(tipo==='extintor'){
+    payload.classe=document.getElementById('me-classe').value;
+    payload.carga_nominal=document.getElementById('me-carga').value||null;
+    payload.numero_identificacao=document.getElementById('me-numero').value||null;
+    payload.selo_inmetro=document.getElementById('me-selo').value||null;
+    payload.hd_numero=null;
+  }else{
+    payload.hd_numero=document.getElementById('me-hd').value||null;
+    payload.classe=null;payload.carga_nominal=null;payload.numero_identificacao=null;payload.selo_inmetro=null;
+  }
+  if(editingExtintorId){
+    await sbUpdate('equipamentos_incendio',editingExtintorId,payload);
+    editingExtintorId=null;
+  }else{
+    await sbInsert('equipamentos_incendio',payload);
+  }
+  updateSyncIndicator();
+  closeModal('modal-extintor');
+  await loadExtintores();
+  refreshExtintoresList();
+  showToast('\u2705 Item salvo','ok');
+}
+function verEtiqueta(id){
+  const e=state_extintores.find(function(e){return String(e.id)===String(id);});
+  if(!e)return;
+  const nome=e.tipo==='mangueira'?(e.hdNumero||'Mangueira'):((e.classe||'')+' \u00b7 N\u00ba '+(e.numeroIdentificacao||'\u2014'));
+  document.getElementById('etiqueta-title').textContent='\ud83d\udccb '+nome;
+  document.getElementById('etiqueta-info').innerHTML=e.local+'<br>Validade: '+(e.dataValidade?new Date(e.dataValidade+'T00:00:00').toLocaleDateString('pt-BR'):'\u2014');
+  const url=EXT_BASE_URL+e.id;
+  document.getElementById('etiqueta-url').textContent=url;
+  const qrContainer=document.getElementById('etiqueta-qr-container');
+  qrContainer.innerHTML='';
+  if(window.QRCode){
+    new QRCode(qrContainer,{text:url,width:180,height:180,colorDark:'#112F3D',colorLight:'#ffffff'});
+  }else{
+    qrContainer.innerHTML='<div style="padding:40px;color:#112F3D;font-size:11px">QR indispon\u00edvel offline</div>';
+  }
+  openModal('modal-etiqueta');
+}
+
 /* ============ PERFIS / RBAC ============ */
 const MODULOS=[
  {key:'dashboard',label:'Dashboard'},
@@ -1108,17 +1361,18 @@ const MODULOS=[
  {key:'usuarios',label:'Usu\u00e1rios'},
  {key:'empresa',label:'Empresa'},
  {key:'alertas',label:'Alertas'},
+ {key:'extintores',label:'Extintores'},
  {key:'auditoria',label:'Auditoria'}
 ];
 let PERFIS=[
  {id:1,nome:'Administrador',permissoes:['todos']},
- {id:2,nome:'Gerente de Contratos',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','usuarios','empresa','alertas','auditoria']},
- {id:3,nome:'Executivo SST',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas']},
- {id:4,nome:'T\u00e9cnico de Seguran\u00e7a',permissoes:['nova-inspecao','inspecoes','nao-conformidades']},
- {id:5,nome:'Supervisor',permissoes:['dashboard','inspecoes','nao-conformidades','alertas']},
+ {id:2,nome:'Gerente de Contratos',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','usuarios','empresa','alertas','extintores','auditoria']},
+ {id:3,nome:'Executivo SST',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores']},
+ {id:4,nome:'T\u00e9cnico de Seguran\u00e7a',permissoes:['nova-inspecao','inspecoes','nao-conformidades','extintores']},
+ {id:5,nome:'Supervisor',permissoes:['dashboard','inspecoes','nao-conformidades','alertas','extintores']},
  {id:6,nome:'Prestadora',permissoes:['nao-conformidades']},
  {id:7,nome:'Encarregado',permissoes:['nova-inspecao','inspecoes','nao-conformidades']},
- {id:8,nome:'Coordenador',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas']}
+ {id:8,nome:'Coordenador',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores']}
 ];
 const RESPONSAVEL_PERFIS=['Encarregado','Supervisor','T\u00e9cnico de Seguran\u00e7a','Coordenador','Gerente de Contratos'];
 const VALIDATOR_PERFIS=['Gerente de Contratos','Coordenador','Supervisor','Executivo SST'];
@@ -1155,6 +1409,7 @@ function showView(name){
   if(name==='empresa')refreshEmpresa();
   if(name==='alertas')refreshAlertas();
   if(name==='pendencias')refreshPendencias();
+  if(name==='extintores')refreshExtintoresList();
   if(name==='nova-inspecao'){renderColabSelect();renderAgenteSelect();renderSupervisorSelect();}
 }
 function openModal(id){document.getElementById(id).classList.add('open')}
@@ -3087,7 +3342,7 @@ function refreshEmpresa(){
 document.addEventListener('DOMContentLoaded',function(){
   (async function(){
     /* Carregar dados em background enquanto login screen está visível */
-    await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores()]);
+    await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores(),loadExtintores()]);
     await loadInspecoes();
     await loadNCs();
     renderPerfilOptions();
@@ -3096,6 +3351,7 @@ document.addEventListener('DOMContentLoaded',function(){
     renderSupervisorSelect();
     renderColabSelect();
     refreshColabList();
+    refreshExtintoresKPIs();
     updateSyncIndicator();
     /* M1: mostrar login, não o app */
     document.getElementById('login-screen').style.display='flex';
@@ -3105,6 +3361,9 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('filter-nc-status').addEventListener('change',refreshNCList);
     document.getElementById('search-nc').addEventListener('input',refreshNCList);
     document.getElementById('search-colab').addEventListener('input',refreshColabList);
+    var sExt=document.getElementById('search-ext');if(sExt)sExt.addEventListener('input',refreshExtintoresList);
+    var ftExt=document.getElementById('filter-ext-tipo');if(ftExt)ftExt.addEventListener('change',refreshExtintoresList);
+    var fsExt=document.getElementById('filter-ext-status');if(fsExt)fsExt.addEventListener('change',refreshExtintoresList);
   })();
   window.addEventListener('online',function(){syncOfflineQueue();updateSyncIndicator();showToast('Conexão restabelecida!','ok');});
   window.addEventListener('offline',function(){updateSyncIndicator();showToast('Sem internet — inspeções salvas localmente','warn');});
