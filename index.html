@@ -547,11 +547,12 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
   <div class="page-header"><div class="page-eyebrow">Seguran&ccedil;a Predial &middot; CENA</div><div class="page-title">Extintores &amp; Mangueiras</div>
     <div class="page-sub">Controle de vencimento e inspe&ccedil;&atilde;o de campo via QR Code</div>
   </div>
-  <div class="kpi-grid">
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
     <div class="kpi-card clickable" onclick="filtrarExtintores('vencido')"><div class="kpi-val red" id="ext-kpi-vencidos">0</div><div class="kpi-lbl">Vencidos</div></div>
     <div class="kpi-card clickable" onclick="filtrarExtintores('atencao')"><div class="kpi-val warn" id="ext-kpi-atencao">0</div><div class="kpi-lbl">A vencer em 30 dias</div></div>
     <div class="kpi-card clickable" onclick="filtrarExtintores('sem_dado')"><div class="kpi-val warn" id="ext-kpi-semdado">0</div><div class="kpi-lbl">Dados incompletos</div></div>
     <div class="kpi-card"><div class="kpi-val green" id="ext-kpi-inspecionados">0</div><div class="kpi-lbl">Inspecionados via QR (30d)</div></div>
+    <div class="kpi-card"><div class="kpi-val red" id="ext-kpi-ciclo">0</div><div class="kpi-lbl">Inspe&ccedil;&atilde;o mensal atrasada</div></div>
   </div>
   <div class="search-bar">
     <input class="search-input" placeholder="Buscar por local, n&uacute;mero, tipo..." id="search-ext">
@@ -571,8 +572,8 @@ body.modo-campo .btn-c,.modo-campo .btn-nc,.modo-campo .btn-na{font-size:13px !i
   </div>
   <div class="card" style="padding:0;overflow:auto">
     <table class="data-table" style="min-width:820px">
-      <thead><tr><th>Item</th><th>Local</th><th>Validade</th><th>Status</th><th>Teste Hidrost&aacute;tico</th><th>&Uacute;ltima inspe&ccedil;&atilde;o QR</th><th>Etiqueta</th><th></th></tr></thead>
-      <tbody id="tbody-extintores"><tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item cadastrado</td></tr></tbody>
+      <thead><tr><th>Item</th><th>Local</th><th>Validade</th><th>Status</th><th>Teste Hidrost&aacute;tico</th><th>Ciclo Mensal</th><th>&Uacute;ltima inspe&ccedil;&atilde;o QR</th><th>Etiqueta</th><th></th></tr></thead>
+      <tbody id="tbody-extintores"><tr><td colspan="9" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item cadastrado</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -1222,6 +1223,16 @@ async function loadExtintores(){
     });
   }
 }
+function getExtCicloStatus(e){
+  if(!e.ultimaInspecaoEm)return{label:'Nunca inspecionado',cls:'badge-na',dias:null};
+  const ultima=new Date(e.ultimaInspecaoEm);
+  const proxima=new Date(ultima);proxima.setDate(proxima.getDate()+30);
+  const hoje=new Date();
+  const diffDias=Math.ceil((proxima-hoje)/(1000*60*60*24));
+  if(diffDias<0)return{label:'Vencido h\u00e1 '+Math.abs(diffDias)+'d',cls:'badge-nc',dias:diffDias};
+  if(diffDias<=5)return{label:'Em '+diffDias+'d',cls:'badge-warn',dias:diffDias};
+  return{label:'Em dia ('+diffDias+'d)',cls:'badge-ok',dias:diffDias};
+}
 function getExtStatus(e){
   if(!e.dataValidade)return 'sem_dado';
   const hoje=new Date();hoje.setHours(0,0,0,0);
@@ -1241,18 +1252,21 @@ function refreshExtintoresKPIs(){
   const vencidos=state_extintores.filter(function(e){return getExtStatus(e)==='vencido';}).length;
   const atencao=state_extintores.filter(function(e){return getExtStatus(e)==='atencao';}).length;
   const semDado=state_extintores.filter(function(e){return getExtStatus(e)==='sem_dado';}).length;
+  const cicloVencido=state_extintores.filter(function(e){const c=getExtCicloStatus(e);return c.dias!==null&&c.dias<0;}).length;
   const trintaDiasAtras=new Date();trintaDiasAtras.setDate(trintaDiasAtras.getDate()-30);
   const inspecionados=state_extintores.filter(function(e){return e.ultimaInspecaoEm&&new Date(e.ultimaInspecaoEm)>=trintaDiasAtras;}).length;
   document.getElementById('ext-kpi-vencidos').textContent=vencidos;
   document.getElementById('ext-kpi-atencao').textContent=atencao;
   document.getElementById('ext-kpi-semdado').textContent=semDado;
   document.getElementById('ext-kpi-inspecionados').textContent=inspecionados;
+  const kpiCiclo=document.getElementById('ext-kpi-ciclo');
+  if(kpiCiclo)kpiCiclo.textContent=cicloVencido;
   const badge=document.getElementById('badge-extintores');
   if(badge){
-    const total=vencidos+atencao;
+    const total=vencidos+atencao+cicloVencido;
     badge.textContent=total;
-    badge.style.background=vencidos>0?'rgba(176,58,46,.3)':total>0?'rgba(157,101,48,.3)':'rgba(195,204,154,.15)';
-    badge.style.color=vencidos>0?'#e07c74':total>0?'#c9955a':'var(--sage)';
+    badge.style.background=(vencidos>0||cicloVencido>0)?'rgba(176,58,46,.3)':total>0?'rgba(157,101,48,.3)':'rgba(195,204,154,.15)';
+    badge.style.color=(vencidos>0||cicloVencido>0)?'#e07c74':total>0?'#c9955a':'var(--sage)';
   }
 }
 function getHidroStatus(e){
@@ -1293,14 +1307,15 @@ function refreshExtintoresList(){
   });
   if(tipoF)list=list.filter(function(e){return e.tipo===tipoF;});
   if(statusF)list=list.filter(function(e){return getExtStatus(e)===statusF;});
-  if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item encontrado</td></tr>';return;}
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item encontrado</td></tr>';return;}
   tbody.innerHTML=list.map(function(e){
     const st=getExtStatus(e);
     const nome=e.tipo==='mangueira'?(e.hdNumero||'Mangueira'):((e.classe||'')+' &middot; '+(e.cargaNominal||'')+(e.numeroIdentificacao?' &middot; N\u00ba '+e.numeroIdentificacao:''));
     const icon=e.tipo==='mangueira'?'&#128167;':'&#129535;';
     const venc=e.dataValidade?new Date(e.dataValidade+'T00:00:00').toLocaleDateString('pt-BR'):'\u2014';
     const ultima=e.ultimaInspecaoEm?new Date(e.ultimaInspecaoEm).toLocaleDateString('pt-BR')+(e.ultimaInspecaoConforme===false?' &#9888;':' &#10003;'):'\u2014';
-    return '<tr><td>'+icon+' '+nome+'</td><td>'+e.local+'</td><td>'+venc+'</td><td>'+extStatusBadgeHTML(st)+'</td><td>'+hidroBadgeHTML(e)+'</td><td>'+ultima+'</td><td><button class="btn btn-outline btn-sm" onclick="verEtiqueta(\''+e.id+'\')">&#128268; QR</button></td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditExtintor(\''+e.id+'\')">&#9998;</button></td></tr>';
+    const ciclo=getExtCicloStatus(e);
+    return '<tr><td>'+icon+' '+nome+'</td><td>'+e.local+'</td><td>'+venc+'</td><td>'+extStatusBadgeHTML(st)+'</td><td>'+hidroBadgeHTML(e)+'</td><td><span class="badge '+ciclo.cls+'">'+ciclo.label+'</span></td><td>'+ultima+'</td><td><button class="btn btn-outline btn-sm" onclick="verEtiqueta(\''+e.id+'\')">&#128268; QR</button></td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditExtintor(\''+e.id+'\')">&#9998;</button></td></tr>';
   }).join('');
 }
 function toggleTipoExtintorFields(){
