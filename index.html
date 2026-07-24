@@ -315,6 +315,7 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <div class="nav-item" data-view="pendencias" onclick="showView('pendencias')"><span class="nav-icon">&#128204;</span> Minhas Pend&ecirc;ncias <span class="nav-badge" id="badge-pendencias" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="alertas" onclick="showView('alertas')"><span class="nav-icon">&#128276;</span> Alertas <span class="nav-badge" id="badge-alertas" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="extintores" onclick="showView('extintores')"><span class="nav-icon">&#129535;</span> Extintores <span class="nav-badge" id="badge-extintores" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
+    <div class="nav-item" data-view="planejamento" onclick="showView('planejamento')"><span class="nav-icon">&#128198;</span> Planejamento SESMT <span class="nav-badge" id="badge-planejamento" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="auditoria" onclick="showView('auditoria')"><span class="nav-icon">&#128270;</span> Auditoria <span class="nav-badge" style="background:rgba(157,101,48,.3);color:#c9955a">EM BREVE</span></div>
   </div>
 </nav>
@@ -623,6 +624,62 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
       <thead><tr><th>Item</th><th>Local</th><th>Validade</th><th>Status</th><th>Teste Hidrost&aacute;tico</th><th>Ciclo Mensal</th><th>&Uacute;ltima inspe&ccedil;&atilde;o QR</th><th>Etiqueta</th><th></th></tr></thead>
       <tbody id="tbody-extintores"><tr><td colspan="9" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item cadastrado</td></tr></tbody>
     </table>
+  </div>
+</div>
+</div>
+
+<!-- PLANEJAMENTO SESMT -->
+<div class="view" id="view-planejamento">
+<div class="view-inner">
+  <div class="page-header"><div class="page-eyebrow">SESMT &middot; PPCR + PMS</div><div class="page-title">Planejamento SESMT</div>
+    <div class="page-sub">Programação anual (PPCR) e mensal (PMS) das atividades da equipe de segurança</div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card clickable" onclick="filtrarAtividades('atrasada')"><div class="kpi-val red" id="pl-kpi-atrasadas">0</div><div class="kpi-lbl">Atrasadas</div></div>
+    <div class="kpi-card clickable" onclick="filtrarAtividades('planejada')"><div class="kpi-val warn" id="pl-kpi-planejadas">0</div><div class="kpi-lbl">Planejadas (este m&ecirc;s)</div></div>
+    <div class="kpi-card clickable" onclick="filtrarAtividades('realizada')"><div class="kpi-val green" id="pl-kpi-realizadas">0</div><div class="kpi-lbl">Realizadas (este m&ecirc;s)</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="pl-kpi-aderencia">&mdash;</div><div class="kpi-lbl">Ader&ecirc;ncia ao PMS</div></div>
+  </div>
+
+  <div class="section-tabs" id="pl-tabs" style="margin-bottom:20px">
+    <div class="section-tab active-l" onclick="showPlanTab('pms')" id="pl-tab-pms">&#128198; PMS &middot; MENSAL</div>
+    <div class="section-tab" onclick="showPlanTab('ppcr')" id="pl-tab-ppcr">&#128197; PPCR &middot; ANUAL</div>
+  </div>
+
+  <div id="pl-view-pms">
+    <div class="search-bar">
+      <input class="search-input" placeholder="Buscar por t&eacute;cnico, local, tipo..." id="search-plan">
+      <select class="form-select" style="width:auto" id="filter-plan-tecnico"></select>
+      <select class="form-select" style="width:auto" id="filter-plan-status">
+        <option value="">Todos os status</option>
+        <option value="planejada">Planejada</option>
+        <option value="realizada">Realizada</option>
+        <option value="atrasada">Atrasada</option>
+        <option value="cancelada">Cancelada</option>
+      </select>
+      <input class="form-input" type="month" id="filter-plan-mes" style="width:auto">
+      <button class="btn btn-primary btn-sm" onclick="openNovaAtividade()">+ Nova Atividade</button>
+    </div>
+    <div class="card" style="padding:0;overflow:auto">
+      <table class="data-table" style="min-width:860px">
+        <thead><tr><th>Data prevista</th><th>T&eacute;cnico</th><th>Tipo</th><th>Local</th><th>Prioridade</th><th>Status</th><th>V&iacute;nculo</th><th></th></tr></thead>
+        <tbody id="tbody-planejamento"><tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma atividade planejada</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="pl-view-ppcr" style="display:none">
+    <div class="search-bar">
+      <select class="form-select" style="width:auto" id="filter-ppcr-ano"></select>
+      <button class="btn btn-primary btn-sm" onclick="openNovaMetaPPCR()">+ Nova Meta PPCR</button>
+    </div>
+    <div class="card" style="padding:0;overflow:auto">
+      <table class="data-table" style="min-width:760px">
+        <thead><tr><th>Trimestre</th><th>Tipo de atividade</th><th>Base/Local</th><th>T&eacute;cnico</th><th>Meta</th><th>Realizado</th><th>%</th><th></th></tr></thead>
+        <tbody id="tbody-ppcr"><tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma meta cadastrada</td></tr></tbody>
+      </table>
+    </div>
   </div>
 </div>
 </div>
@@ -982,6 +1039,131 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarExtintor()">SALVAR</button>
       <button class="btn btn-outline" onclick="closeModal('modal-extintor')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVA/EDITAR ATIVIDADE PLANEJADA -->
+<div class="overlay" id="modal-atividade">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-atividade')">&#10005;</button>
+    <div class="modal-title" id="modal-atividade-title">&#128198; Nova Atividade</div>
+    <input type="hidden" id="pa-id" value="">
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">T&eacute;cnico respons&aacute;vel</label>
+        <select class="form-select" id="pa-tecnico"></select>
+      </div>
+      <div class="form-group"><label class="form-label">Tipo de atividade</label>
+        <select class="form-select" id="pa-tipo">
+          <option value="inspecao_rotina">Inspe&ccedil;&atilde;o de rotina</option>
+          <option value="inspecao_inicial">Inspe&ccedil;&atilde;o inicial</option>
+          <option value="blitz">Blitz de seguran&ccedil;a</option>
+          <option value="inspecao_equipamento">Inspe&ccedil;&atilde;o de equipamento</option>
+          <option value="treinamento">Treinamento</option>
+          <option value="dds">DDS</option>
+          <option value="auditoria_interna">Auditoria interna</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">T&iacute;tulo/descri&ccedil;&atilde;o</label><input class="form-input" id="pa-titulo" placeholder="Ex: DDS sobre trabalho em altura"></div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">Base/Local previsto</label><input class="form-input" id="pa-local" placeholder="Ex: Base Teresina Norte"></div>
+      <div class="form-group"><label class="form-label">Data prevista</label><input class="form-input" type="date" id="pa-data"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">Prioridade</label>
+        <select class="form-select" id="pa-prioridade">
+          <option value="media">M&eacute;dia</option>
+          <option value="alta">Alta</option>
+          <option value="baixa">Baixa</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Vincular meta PPCR (opcional)</label>
+        <select class="form-select" id="pa-ppcr-meta"><option value="">Nenhuma</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Observa&ccedil;&otilde;es</label><textarea class="form-textarea" id="pa-obs" placeholder="Detalhes adicionais..."></textarea></div>
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="salvarAtividade()">SALVAR</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-atividade')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MARCAR ATIVIDADE COMO REALIZADA -->
+<div class="overlay" id="modal-marcar-realizada">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-marcar-realizada')">&#10005;</button>
+    <div class="modal-title">&#9989; Marcar como Realizada</div>
+    <input type="hidden" id="mr-id" value="">
+    <div id="mr-resumo" class="card" style="padding:12px;margin-bottom:14px;font-size:13px"></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Evid&ecirc;ncia (foto) &middot; opcional para treinamento/DDS/auditoria</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer">&#128247; Tirar foto<input type="file" accept="image/*" capture="environment" id="mr-foto-camera" style="display:none" onchange="handleMrFotoCapture(event)"></label>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer">&#128206; Anexar<input type="file" accept="image/*" id="mr-foto-galeria" style="display:none" onchange="handleMrFotoCapture(event)"></label>
+      </div>
+      <div id="mr-foto-preview" style="margin-top:8px"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Observa&ccedil;&otilde;es da execu&ccedil;&atilde;o</label><textarea class="form-textarea" id="mr-obs" placeholder="Como foi realizada, quantidade de participantes etc..."></textarea></div>
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="confirmarMarcarRealizada()">CONFIRMAR REALIZA&Ccedil;&Atilde;O</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-marcar-realizada')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CANCELAR ATIVIDADE -->
+<div class="overlay" id="modal-cancelar-atividade">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-cancelar-atividade')">&#10005;</button>
+    <div class="modal-title">&#128683; Cancelar Atividade</div>
+    <input type="hidden" id="ca-id" value="">
+    <div class="form-group" style="margin-bottom:20px"><label class="form-label">Motivo do cancelamento <span style="color:#e07c74">*</span></label><textarea class="form-textarea" id="ca-motivo" placeholder="Ex: equipe remanejada, condições climáticas..."></textarea></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-danger" style="background:#B03A2E;color:#fff" onclick="confirmarCancelarAtividade()">CONFIRMAR CANCELAMENTO</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-cancelar-atividade')">Voltar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL META PPCR -->
+<div class="overlay" id="modal-ppcr">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-ppcr')">&#10005;</button>
+    <div class="modal-title" id="modal-ppcr-title">&#128197; Nova Meta PPCR</div>
+    <input type="hidden" id="pp-id" value="">
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">Ano</label><input class="form-input" type="number" id="pp-ano" min="2024" max="2035"></div>
+      <div class="form-group"><label class="form-label">Trimestre</label>
+        <select class="form-select" id="pp-trimestre">
+          <option value="1">1&ordm; Trimestre</option><option value="2">2&ordm; Trimestre</option>
+          <option value="3">3&ordm; Trimestre</option><option value="4">4&ordm; Trimestre</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Tipo de atividade</label>
+      <select class="form-select" id="pp-tipo">
+        <option value="inspecao_rotina">Inspe&ccedil;&atilde;o de rotina</option>
+        <option value="inspecao_inicial">Inspe&ccedil;&atilde;o inicial</option>
+        <option value="blitz">Blitz de seguran&ccedil;a</option>
+        <option value="inspecao_equipamento">Inspe&ccedil;&atilde;o de equipamento</option>
+        <option value="treinamento">Treinamento</option>
+        <option value="dds">DDS</option>
+        <option value="auditoria_interna">Auditoria interna</option>
+        <option value="outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">Base/Local (opcional)</label><input class="form-input" id="pp-local" placeholder="Deixe em branco para todas as bases"></div>
+      <div class="form-group"><label class="form-label">T&eacute;cnico (opcional)</label><select class="form-select" id="pp-tecnico"><option value="">Toda a equipe</option></select></div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Meta (quantidade no trimestre)</label><input class="form-input" type="number" id="pp-meta" min="1" value="1"></div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Observa&ccedil;&otilde;es</label><textarea class="form-textarea" id="pp-obs"></textarea></div>
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="salvarMetaPPCR()">SALVAR</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-ppcr')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1438,6 +1620,406 @@ function verEtiqueta(id){
   openModal('modal-etiqueta');
 }
 
+/* ============ PLANEJAMENTO SESMT (PPCR + PMS) ============ */
+let state_atividades=[];
+let state_ppcr_metas=[];
+let editingAtividadeId=null;
+let editingPPCRId=null;
+let pendingMrFoto=null;
+let plActiveTab='pms';
+
+const TIPO_ATIVIDADE_LABELS={
+  inspecao_rotina:'Inspe\u00e7\u00e3o de rotina',
+  inspecao_inicial:'Inspe\u00e7\u00e3o inicial',
+  blitz:'Blitz de seguran\u00e7a',
+  inspecao_equipamento:'Inspe\u00e7\u00e3o de equipamento',
+  treinamento:'Treinamento',
+  dds:'DDS',
+  auditoria_interna:'Auditoria interna',
+  outro:'Outro'
+};
+const TIPOS_INSPECAO=['inspecao_rotina','inspecao_inicial','inspecao_equipamento','blitz'];
+
+async function loadPlanejamento(){
+  const rowsAtiv=await sbSelect('atividades_planejadas','select=*&order=data_prevista');
+  if(rowsAtiv){
+    state_atividades=rowsAtiv.map(function(r){return {
+      id:r.id,tecnicoId:r.tecnico_id,tecnicoNome:r.tecnico_nome,tipoAtividade:r.tipo_atividade,
+      titulo:r.titulo||'',baseLocal:r.base_local||'',dataPrevista:r.data_prevista,
+      prioridade:r.prioridade||'media',statusManual:r.status||'planejada',
+      ppcrMetaId:r.ppcr_meta_id||null,inspecaoVinculadaId:r.inspecao_vinculada_id||null,
+      realizadaEm:r.realizada_em||null,evidenciaFoto:r.evidencia_foto||null,
+      observacoes:r.observacoes||'',motivoCancelamento:r.motivo_cancelamento||null
+    };});
+  }
+  const rowsPPCR=await sbSelect('ppcr_metas','select=*&order=ano,trimestre');
+  if(rowsPPCR){
+    state_ppcr_metas=rowsPPCR.map(function(r){return {
+      id:r.id,ano:r.ano,trimestre:r.trimestre,tipoAtividade:r.tipo_atividade,
+      baseLocal:r.base_local||'',metaQuantidade:r.meta_quantidade||0,
+      tecnicoId:r.tecnico_id||null,observacoes:r.observacoes||''
+    };});
+  }
+}
+
+function getAtividadeStatus(a){
+  if(a.statusManual==='cancelada')return 'cancelada';
+  if(a.realizadaEm)return 'realizada';
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const prevista=new Date(a.dataPrevista+'T00:00:00');
+  if(prevista<hoje)return 'atrasada';
+  return 'planejada';
+}
+function statusAtividadeBadgeHTML(status){
+  const map={
+    planejada:['badge-warn','Planejada'],
+    realizada:['badge-ok','Realizada'],
+    atrasada:['badge-nc','Atrasada'],
+    cancelada:['badge-na','Cancelada']
+  };
+  const m=map[status]||map.planejada;
+  return '<span class="badge '+m[0]+'">'+m[1]+'</span>';
+}
+
+function showPlanTab(tab){
+  plActiveTab=tab;
+  document.getElementById('pl-view-pms').style.display=tab==='pms'?'':'none';
+  document.getElementById('pl-view-ppcr').style.display=tab==='ppcr'?'':'none';
+  document.getElementById('pl-tab-pms').className='section-tab'+(tab==='pms'?' active-l':'');
+  document.getElementById('pl-tab-ppcr').className='section-tab'+(tab==='ppcr'?' active-l':'');
+  if(tab==='ppcr')refreshPPCRList();
+}
+
+let plFiltroStatus='';
+function filtrarAtividades(status){
+  plFiltroStatus=plFiltroStatus===status?'':status;
+  document.getElementById('filter-plan-status').value=plFiltroStatus;
+  refreshAtividadesList();
+}
+
+function renderTecnicoFilterSelect(){
+  const sel=document.getElementById('filter-plan-tecnico');
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML='<option value="">Todos os t\u00e9cnicos</option>'+state.usuarios.map(function(u){
+    return '<option value="'+u.id+'">'+u.nome+'</option>';
+  }).join('');
+  if(current)sel.value=current;
+}
+function renderTecnicoSelect(selectId,includeAll){
+  const sel=document.getElementById(selectId);
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML=(includeAll?'<option value="">Toda a equipe</option>':'')+state.usuarios.map(function(u){
+    return '<option value="'+u.id+'">'+u.nome+'</option>';
+  }).join('');
+  if(current)sel.value=current;
+}
+function renderPPCRMetaSelect(){
+  const sel=document.getElementById('pa-ppcr-meta');
+  if(!sel)return;
+  const anoAtual=new Date().getFullYear();
+  const opts=state_ppcr_metas.filter(function(m){return m.ano===anoAtual;}).map(function(m){
+    return '<option value="'+m.id+'">'+m.ano+' T'+m.trimestre+' \u00b7 '+(TIPO_ATIVIDADE_LABELS[m.tipoAtividade]||m.tipoAtividade)+(m.baseLocal?' \u00b7 '+m.baseLocal:'')+'</option>';
+  }).join('');
+  sel.innerHTML='<option value="">Nenhuma</option>'+opts;
+}
+function renderAnoPPCRSelect(){
+  const sel=document.getElementById('filter-ppcr-ano');
+  if(!sel)return;
+  const anoAtual=new Date().getFullYear();
+  const current=sel.value;
+  let opts='';
+  for(let a=anoAtual-1;a<=anoAtual+2;a++){opts+='<option value="'+a+'">'+a+'</option>';}
+  sel.innerHTML=opts;
+  sel.value=current||String(anoAtual);
+}
+
+function refreshPlanejamentoKPIs(){
+  const now=new Date();
+  const mesAtual=now.getMonth(),anoAtual=now.getFullYear();
+  const doMes=state_atividades.filter(function(a){
+    const d=new Date(a.dataPrevista+'T00:00:00');
+    return d.getMonth()===mesAtual&&d.getFullYear()===anoAtual;
+  });
+  const atrasadas=state_atividades.filter(function(a){return getAtividadeStatus(a)==='atrasada';}).length;
+  const planejadasMes=doMes.filter(function(a){return getAtividadeStatus(a)==='planejada';}).length;
+  const realizadasMes=doMes.filter(function(a){return getAtividadeStatus(a)==='realizada';}).length;
+  const totalMesValido=doMes.filter(function(a){return getAtividadeStatus(a)!=='cancelada';}).length;
+  const aderencia=totalMesValido>0?Math.round((realizadasMes/totalMesValido)*100):null;
+  document.getElementById('pl-kpi-atrasadas').textContent=atrasadas;
+  document.getElementById('pl-kpi-planejadas').textContent=planejadasMes;
+  document.getElementById('pl-kpi-realizadas').textContent=realizadasMes;
+  document.getElementById('pl-kpi-aderencia').textContent=aderencia!==null?aderencia+'%':'\u2014';
+  const badge=document.getElementById('badge-planejamento');
+  if(badge){
+    badge.textContent=atrasadas;
+    badge.style.background=atrasadas>0?'rgba(176,58,46,.3)':'rgba(195,204,154,.15)';
+    badge.style.color=atrasadas>0?'#e07c74':'var(--sage)';
+  }
+}
+
+function refreshAtividadesList(){
+  refreshPlanejamentoKPIs();
+  const tbody=document.getElementById('tbody-planejamento');
+  const search=(document.getElementById('search-plan')||{value:''}).value.toLowerCase();
+  const tecnicoF=(document.getElementById('filter-plan-tecnico')||{value:''}).value;
+  const statusF=(document.getElementById('filter-plan-status')||{value:''}).value;
+  const mesF=(document.getElementById('filter-plan-mes')||{value:''}).value;
+  let list=state_atividades.slice();
+  if(search)list=list.filter(function(a){
+    return a.tecnicoNome.toLowerCase().indexOf(search)>=0||(a.baseLocal||'').toLowerCase().indexOf(search)>=0||(TIPO_ATIVIDADE_LABELS[a.tipoAtividade]||'').toLowerCase().indexOf(search)>=0||(a.titulo||'').toLowerCase().indexOf(search)>=0;
+  });
+  if(tecnicoF)list=list.filter(function(a){return String(a.tecnicoId)===String(tecnicoF);});
+  if(statusF)list=list.filter(function(a){return getAtividadeStatus(a)===statusF;});
+  if(mesF)list=list.filter(function(a){return (a.dataPrevista||'').substring(0,7)===mesF;});
+  list.sort(function(a,b){return a.dataPrevista<b.dataPrevista?-1:1;});
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma atividade encontrada</td></tr>';return;}
+  const prioMap={alta:'badge-nc',media:'badge-warn',baixa:'badge-na'};
+  tbody.innerHTML=list.map(function(a){
+    const status=getAtividadeStatus(a);
+    const dataFmt=new Date(a.dataPrevista+'T00:00:00').toLocaleDateString('pt-BR');
+    let vinculo='\u2014';
+    if(a.inspecaoVinculadaId)vinculo='<span class="badge badge-ok">Insp. #'+a.inspecaoVinculadaId+'</span>';
+    else if(a.evidenciaFoto)vinculo='<span class="badge badge-ok">&#128247; Evid&ecirc;ncia</span>';
+    let acoes='';
+    if(status==='planejada'||status==='atrasada'){
+      acoes+='<button class="btn btn-outline btn-sm" onclick="openMarcarRealizada(\''+a.id+'\')">&#9989;</button> ';
+      acoes+='<button class="btn btn-outline btn-sm" onclick="openEditAtividade(\''+a.id+'\')">&#9998;</button> ';
+      acoes+='<button class="btn btn-outline btn-sm" style="border-color:rgba(176,58,46,.4);color:#e07c74" onclick="openCancelarAtividade(\''+a.id+'\')">&#128683;</button>';
+    }else{
+      acoes+='<button class="btn btn-outline btn-sm" onclick="openEditAtividade(\''+a.id+'\')">&#9998;</button>';
+    }
+    return '<tr><td>'+dataFmt+'</td><td>'+a.tecnicoNome+'</td><td>'+(TIPO_ATIVIDADE_LABELS[a.tipoAtividade]||a.tipoAtividade)+(a.titulo?' &middot; '+a.titulo:'')+'</td><td>'+(a.baseLocal||'\u2014')+'</td><td><span class="badge '+prioMap[a.prioridade]+'">'+a.prioridade+'</span></td><td>'+statusAtividadeBadgeHTML(status)+'</td><td>'+vinculo+'</td><td style="white-space:nowrap">'+acoes+'</td></tr>';
+  }).join('');
+}
+
+function refreshPPCRList(){
+  renderAnoPPCRSelect();
+  const tbody=document.getElementById('tbody-ppcr');
+  const anoF=parseInt((document.getElementById('filter-ppcr-ano')||{value:new Date().getFullYear()}).value);
+  let list=state_ppcr_metas.filter(function(m){return m.ano===anoF;});
+  list.sort(function(a,b){return a.trimestre-b.trimestre;});
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma meta cadastrada para '+anoF+'</td></tr>';return;}
+  tbody.innerHTML=list.map(function(m){
+    const tecnico=m.tecnicoId?(state.usuarios.find(function(u){return String(u.id)===String(m.tecnicoId);})||{}).nome||'\u2014':'Toda a equipe';
+    const realizado=state_atividades.filter(function(a){
+      if(a.ppcrMetaId===m.id)return getAtividadeStatus(a)==='realizada';
+      // fallback: casar por tipo+trimestre+ano+local se não houver vínculo direto
+      if(a.ppcrMetaId)return false;
+      const d=new Date(a.dataPrevista+'T00:00:00');
+      const tri=Math.floor(d.getMonth()/3)+1;
+      return getAtividadeStatus(a)==='realizada'&&a.tipoAtividade===m.tipoAtividade&&d.getFullYear()===m.ano&&tri===m.trimestre&&(!m.baseLocal||a.baseLocal===m.baseLocal)&&(!m.tecnicoId||String(a.tecnicoId)===String(m.tecnicoId));
+    }).length;
+    const pct=m.metaQuantidade>0?Math.min(100,Math.round(realizado/m.metaQuantidade*100)):0;
+    const cor=pct>=100?'#5ebc8a':pct>=50?'#c9955a':'#e07c74';
+    return '<tr><td>T'+m.trimestre+'</td><td>'+(TIPO_ATIVIDADE_LABELS[m.tipoAtividade]||m.tipoAtividade)+'</td><td>'+(m.baseLocal||'Todas')+'</td><td>'+tecnico+'</td><td>'+m.metaQuantidade+'</td><td>'+realizado+'</td><td style="color:'+cor+';font-weight:700">'+pct+'%</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditMetaPPCR(\''+m.id+'\')">&#9998;</button></td></tr>';
+  }).join('');
+}
+
+/* --- CRUD Atividade --- */
+function openNovaAtividade(){
+  editingAtividadeId=null;
+  document.getElementById('modal-atividade-title').textContent='\ud83d\udcc6 Nova Atividade';
+  document.getElementById('pa-id').value='';
+  renderTecnicoSelect('pa-tecnico',false);
+  renderPPCRMetaSelect();
+  document.getElementById('pa-tipo').value='inspecao_rotina';
+  document.getElementById('pa-titulo').value='';
+  document.getElementById('pa-local').value='';
+  document.getElementById('pa-data').value=new Date().toISOString().substring(0,10);
+  document.getElementById('pa-prioridade').value='media';
+  document.getElementById('pa-ppcr-meta').value='';
+  document.getElementById('pa-obs').value='';
+  openModal('modal-atividade');
+}
+function openEditAtividade(id){
+  const a=state_atividades.find(function(a){return String(a.id)===String(id);});
+  if(!a)return;
+  editingAtividadeId=id;
+  document.getElementById('modal-atividade-title').textContent='\u270f\ufe0f Editar Atividade';
+  document.getElementById('pa-id').value=id;
+  renderTecnicoSelect('pa-tecnico',false);
+  renderPPCRMetaSelect();
+  document.getElementById('pa-tecnico').value=a.tecnicoId;
+  document.getElementById('pa-tipo').value=a.tipoAtividade;
+  document.getElementById('pa-titulo').value=a.titulo||'';
+  document.getElementById('pa-local').value=a.baseLocal||'';
+  document.getElementById('pa-data').value=a.dataPrevista;
+  document.getElementById('pa-prioridade').value=a.prioridade;
+  document.getElementById('pa-ppcr-meta').value=a.ppcrMetaId||'';
+  document.getElementById('pa-obs').value=a.observacoes||'';
+  openModal('modal-atividade');
+}
+async function salvarAtividade(){
+  const tecnicoId=document.getElementById('pa-tecnico').value;
+  const tipo=document.getElementById('pa-tipo').value;
+  const data=document.getElementById('pa-data').value;
+  if(!tecnicoId){alert('Selecione o t\u00e9cnico respons\u00e1vel.');return;}
+  if(!data){alert('Informe a data prevista.');return;}
+  const tecnico=state.usuarios.find(function(u){return String(u.id)===String(tecnicoId);});
+  const payload={
+    tecnico_id:parseInt(tecnicoId),
+    tecnico_nome:tecnico?tecnico.nome:'',
+    tipo_atividade:tipo,
+    titulo:document.getElementById('pa-titulo').value||null,
+    base_local:document.getElementById('pa-local').value||null,
+    data_prevista:data,
+    prioridade:document.getElementById('pa-prioridade').value,
+    ppcr_meta_id:document.getElementById('pa-ppcr-meta').value||null,
+    observacoes:document.getElementById('pa-obs').value||null
+  };
+  if(editingAtividadeId){
+    await sbUpdate('atividades_planejadas',editingAtividadeId,payload);
+  }else{
+    payload.status='planejada';
+    payload.criado_por=getActiveUserName();
+    await sbInsert('atividades_planejadas',payload);
+  }
+  updateSyncIndicator();
+  closeModal('modal-atividade');
+  await loadPlanejamento();
+  refreshAtividadesList();
+  showToast('\u2705 Atividade salva','ok');
+}
+
+/* --- Marcar como realizada --- */
+let mrCurrentAtividade=null;
+function openMarcarRealizada(id){
+  const a=state_atividades.find(function(a){return String(a.id)===String(id);});
+  if(!a)return;
+  mrCurrentAtividade=a;
+  pendingMrFoto=null;
+  document.getElementById('mr-id').value=id;
+  document.getElementById('mr-resumo').innerHTML='<strong>'+(TIPO_ATIVIDADE_LABELS[a.tipoAtividade]||a.tipoAtividade)+'</strong> \u00b7 '+a.tecnicoNome+'<br>'+(a.baseLocal||'')+' \u00b7 '+new Date(a.dataPrevista+'T00:00:00').toLocaleDateString('pt-BR');
+  document.getElementById('mr-obs').value='';
+  document.getElementById('mr-foto-camera').value='';
+  document.getElementById('mr-foto-galeria').value='';
+  document.getElementById('mr-foto-preview').innerHTML='';
+  openModal('modal-marcar-realizada');
+}
+function handleMrFotoCapture(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  processPhotoFile(file,function(foto){pendingMrFoto=foto;},'mr-foto-preview');
+}
+async function confirmarMarcarRealizada(){
+  if(!mrCurrentAtividade)return;
+  const payload={
+    status:'realizada',
+    realizada_em:new Date().toISOString(),
+    observacoes:(document.getElementById('mr-obs').value||mrCurrentAtividade.observacoes||null),
+    evidencia_foto:pendingMrFoto?{dataURL:pendingMrFoto.dataURL.substring(0,400000),timestamp:pendingMrFoto.timestamp,coords:pendingMrFoto.coords}:null
+  };
+  await sbUpdate('atividades_planejadas',mrCurrentAtividade.id,payload);
+  updateSyncIndicator();
+  closeModal('modal-marcar-realizada');
+  mrCurrentAtividade=null;pendingMrFoto=null;
+  await loadPlanejamento();
+  refreshAtividadesList();
+  showToast('\u2705 Atividade marcada como realizada','ok');
+}
+
+/* --- Cancelar atividade --- */
+let caCurrentId=null;
+function openCancelarAtividade(id){
+  caCurrentId=id;
+  document.getElementById('ca-id').value=id;
+  document.getElementById('ca-motivo').value='';
+  openModal('modal-cancelar-atividade');
+}
+async function confirmarCancelarAtividade(){
+  const motivo=document.getElementById('ca-motivo').value.trim();
+  if(!motivo){alert('Informe o motivo do cancelamento.');return;}
+  await sbUpdate('atividades_planejadas',caCurrentId,{status:'cancelada',motivo_cancelamento:motivo});
+  updateSyncIndicator();
+  closeModal('modal-cancelar-atividade');
+  caCurrentId=null;
+  await loadPlanejamento();
+  refreshAtividadesList();
+  showToast('\ud83d\udeab Atividade cancelada','warn');
+}
+
+/* --- CRUD Meta PPCR --- */
+function openNovaMetaPPCR(){
+  editingPPCRId=null;
+  document.getElementById('modal-ppcr-title').textContent='\ud83d\udcc5 Nova Meta PPCR';
+  document.getElementById('pp-id').value='';
+  document.getElementById('pp-ano').value=new Date().getFullYear();
+  document.getElementById('pp-trimestre').value='1';
+  document.getElementById('pp-tipo').value='inspecao_rotina';
+  document.getElementById('pp-local').value='';
+  renderTecnicoSelect('pp-tecnico',true);
+  document.getElementById('pp-tecnico').value='';
+  document.getElementById('pp-meta').value='1';
+  document.getElementById('pp-obs').value='';
+  openModal('modal-ppcr');
+}
+function openEditMetaPPCR(id){
+  const m=state_ppcr_metas.find(function(m){return String(m.id)===String(id);});
+  if(!m)return;
+  editingPPCRId=id;
+  document.getElementById('modal-ppcr-title').textContent='\u270f\ufe0f Editar Meta PPCR';
+  document.getElementById('pp-id').value=id;
+  document.getElementById('pp-ano').value=m.ano;
+  document.getElementById('pp-trimestre').value=m.trimestre;
+  document.getElementById('pp-tipo').value=m.tipoAtividade;
+  document.getElementById('pp-local').value=m.baseLocal||'';
+  renderTecnicoSelect('pp-tecnico',true);
+  document.getElementById('pp-tecnico').value=m.tecnicoId||'';
+  document.getElementById('pp-meta').value=m.metaQuantidade;
+  document.getElementById('pp-obs').value=m.observacoes||'';
+  openModal('modal-ppcr');
+}
+async function salvarMetaPPCR(){
+  const ano=parseInt(document.getElementById('pp-ano').value);
+  const meta=parseInt(document.getElementById('pp-meta').value);
+  if(!ano||!meta){alert('Preencha ano e meta corretamente.');return;}
+  const tecnicoId=document.getElementById('pp-tecnico').value;
+  const payload={
+    ano:ano,
+    trimestre:parseInt(document.getElementById('pp-trimestre').value),
+    tipo_atividade:document.getElementById('pp-tipo').value,
+    base_local:document.getElementById('pp-local').value||null,
+    tecnico_id:tecnicoId?parseInt(tecnicoId):null,
+    meta_quantidade:meta,
+    observacoes:document.getElementById('pp-obs').value||null
+  };
+  if(editingPPCRId){
+    await sbUpdate('ppcr_metas',editingPPCRId,payload);
+  }else{
+    await sbInsert('ppcr_metas',payload);
+  }
+  updateSyncIndicator();
+  closeModal('modal-ppcr');
+  await loadPlanejamento();
+  refreshPPCRList();
+  showToast('\u2705 Meta PPCR salva','ok');
+}
+
+/* --- Auto-vínculo: quando uma inspeção ISP é salva, casa com atividade planejada do mesmo técnico/dia --- */
+async function autoVincularAtividade(insp,agenteNomes){
+  try{
+    const hojeStr=new Date().toISOString().substring(0,10);
+    const candidatas=state_atividades.filter(function(a){
+      return TIPOS_INSPECAO.indexOf(a.tipoAtividade)>=0
+        && a.dataPrevista===hojeStr
+        && !a.realizadaEm
+        && a.statusManual!=='cancelada'
+        && agenteNomes.indexOf(a.tecnicoNome)>=0;
+    });
+    if(candidatas.length===0)return;
+    const alvo=candidatas[0];
+    await sbUpdate('atividades_planejadas',alvo.id,{
+      status:'realizada',
+      realizada_em:new Date().toISOString(),
+      inspecao_vinculada_id:insp.id
+    });
+    await loadPlanejamento();
+    if(document.getElementById('view-planejamento').classList.contains('active'))refreshAtividadesList();
+  }catch(e){console.error('autoVincularAtividade:',e);}
+}
+
 /* ============ PERFIS / RBAC ============ */
 const MODULOS=[
  {key:'dashboard',label:'Dashboard'},
@@ -1449,17 +2031,18 @@ const MODULOS=[
  {key:'empresa',label:'Empresa'},
  {key:'alertas',label:'Alertas'},
  {key:'extintores',label:'Extintores'},
+ {key:'planejamento',label:'Planejamento SESMT'},
  {key:'auditoria',label:'Auditoria'}
 ];
 let PERFIS=[
  {id:1,nome:'Administrador',permissoes:['todos']},
- {id:2,nome:'Gerente de Contratos',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','usuarios','empresa','alertas','extintores','auditoria']},
- {id:3,nome:'Executivo SST',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores']},
- {id:4,nome:'T\u00e9cnico de Seguran\u00e7a',permissoes:['nova-inspecao','inspecoes','nao-conformidades','extintores']},
- {id:5,nome:'Supervisor',permissoes:['dashboard','inspecoes','nao-conformidades','alertas','extintores']},
+ {id:2,nome:'Gerente de Contratos',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','usuarios','empresa','alertas','extintores','planejamento','auditoria']},
+ {id:3,nome:'Executivo SST',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores','planejamento']},
+ {id:4,nome:'T\u00e9cnico de Seguran\u00e7a',permissoes:['nova-inspecao','inspecoes','nao-conformidades','extintores','planejamento']},
+ {id:5,nome:'Supervisor',permissoes:['dashboard','inspecoes','nao-conformidades','alertas','extintores','planejamento']},
  {id:6,nome:'Prestadora',permissoes:['nao-conformidades']},
  {id:7,nome:'Encarregado',permissoes:['nova-inspecao','inspecoes','nao-conformidades']},
- {id:8,nome:'Coordenador',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores']}
+ {id:8,nome:'Coordenador',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores','planejamento']}
 ];
 const RESPONSAVEL_PERFIS=['Encarregado','Supervisor','T\u00e9cnico de Seguran\u00e7a','Coordenador','Gerente de Contratos'];
 const VALIDATOR_PERFIS=['Gerente de Contratos','Coordenador','Supervisor','Executivo SST'];
@@ -1497,6 +2080,7 @@ function showView(name){
   if(name==='alertas')refreshAlertas();
   if(name==='pendencias')refreshPendencias();
   if(name==='extintores')refreshExtintoresList();
+  if(name==='planejamento'){renderTecnicoFilterSelect();refreshAtividadesList();if(plActiveTab==='ppcr')refreshPPCRList();}
   if(name==='nova-inspecao'){renderColabSelect();renderAgenteSelect();renderSupervisorSelect();}
 }
 function openModal(id){document.getElementById(id).classList.add('open')}
@@ -2038,6 +2622,7 @@ async function salvarInspecao(){
       state.ncs.forEach(function(n){if(String(n.inspId)===String(oldId))n.inspId=insp.id;});
       updateSyncIndicator();
       showToast('\u2601\ufe0f Inspe\u00e7\u00e3o #'+insp.num+' salva no Supabase!','ok');
+      autoVincularAtividade(insp,agenteNomes);
 
 
         try{var lqc=JSON.parse(localStorage.getItem('ls_inspecoes_offline')||'[]');localStorage.setItem('ls_inspecoes_offline',JSON.stringify(lqc.filter(function(x){return !x.insp||x.insp.id!==insp.id;})));}catch(e){}      /* NCs no banco */
@@ -3428,7 +4013,7 @@ function refreshEmpresa(){
 document.addEventListener('DOMContentLoaded',function(){
   (async function(){
     /* Carregar dados em background enquanto login screen está visível */
-    await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores(),loadExtintores()]);
+    await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores(),loadExtintores(),loadPlanejamento()]);
     await loadInspecoes();
     await loadNCs();
     renderPerfilOptions();
@@ -3450,6 +4035,11 @@ document.addEventListener('DOMContentLoaded',function(){
     var sExt=document.getElementById('search-ext');if(sExt)sExt.addEventListener('input',refreshExtintoresList);
     var ftExt=document.getElementById('filter-ext-tipo');if(ftExt)ftExt.addEventListener('change',refreshExtintoresList);
     var fsExt=document.getElementById('filter-ext-status');if(fsExt)fsExt.addEventListener('change',refreshExtintoresList);
+    var sPlan=document.getElementById('search-plan');if(sPlan)sPlan.addEventListener('input',refreshAtividadesList);
+    var ftPlan=document.getElementById('filter-plan-tecnico');if(ftPlan)ftPlan.addEventListener('change',refreshAtividadesList);
+    var fsPlan=document.getElementById('filter-plan-status');if(fsPlan)fsPlan.addEventListener('change',refreshAtividadesList);
+    var fmPlan=document.getElementById('filter-plan-mes');if(fmPlan)fmPlan.addEventListener('change',refreshAtividadesList);
+    var faPPCR=document.getElementById('filter-ppcr-ano');if(faPPCR)faPPCR.addEventListener('change',refreshPPCRList);
   })();
   window.addEventListener('online',function(){syncOfflineQueue();updateSyncIndicator();showToast('Conexão restabelecida!','ok');});
   window.addEventListener('offline',function(){updateSyncIndicator();showToast('Sem internet — inspeções salvas localmente','warn');});
