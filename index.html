@@ -596,12 +596,13 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
   <div class="page-header"><div class="page-eyebrow">Seguran&ccedil;a Predial &middot; CENA</div><div class="page-title">Extintores &amp; Mangueiras</div>
     <div class="page-sub">Controle de vencimento e inspe&ccedil;&atilde;o de campo via QR Code</div>
   </div>
-  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+  <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr)">
     <div class="kpi-card clickable" onclick="filtrarExtintores('vencido')"><div class="kpi-val red" id="ext-kpi-vencidos">0</div><div class="kpi-lbl">Vencidos</div></div>
     <div class="kpi-card clickable" onclick="filtrarExtintores('atencao')"><div class="kpi-val warn" id="ext-kpi-atencao">0</div><div class="kpi-lbl">A vencer em 30 dias</div></div>
     <div class="kpi-card clickable" onclick="filtrarExtintores('sem_dado')"><div class="kpi-val warn" id="ext-kpi-semdado">0</div><div class="kpi-lbl">Dados incompletos</div></div>
     <div class="kpi-card"><div class="kpi-val green" id="ext-kpi-inspecionados">0</div><div class="kpi-lbl">Inspecionados via QR (30d)</div></div>
-    <div class="kpi-card"><div class="kpi-val red" id="ext-kpi-ciclo">0</div><div class="kpi-lbl">Inspe&ccedil;&atilde;o mensal atrasada</div></div>
+    <div class="kpi-card clickable" onclick="filtrarCiclo('vencido')"><div class="kpi-val red" id="ext-kpi-ciclo">0</div><div class="kpi-lbl">Inspe&ccedil;&atilde;o mensal atrasada</div></div>
+    <div class="kpi-card clickable" onclick="filtrarCiclo('nunca')"><div class="kpi-val red" id="ext-kpi-nunca">0</div><div class="kpi-lbl">Nunca inspecionados</div></div>
   </div>
   <div class="search-bar">
     <input class="search-input" placeholder="Buscar por local, n&uacute;mero, tipo..." id="search-ext">
@@ -616,6 +617,13 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
       <option value="atencao">A vencer</option>
       <option value="vencido">Vencido</option>
       <option value="sem_dado">Sem dado</option>
+    </select>
+    <select class="form-select" style="width:auto" id="filter-ext-ciclo">
+      <option value="">Ciclo mensal · todos</option>
+      <option value="nunca">Nunca inspecionado</option>
+      <option value="vencido">Ciclo vencido</option>
+      <option value="atencao">Ciclo pr&oacute;ximo</option>
+      <option value="ok">Ciclo em dia</option>
     </select>
     <button class="btn btn-primary btn-sm" onclick="openModal('modal-extintor')">+ Novo Item</button>
   </div>
@@ -1454,14 +1462,20 @@ async function loadExtintores(){
   }
 }
 function getExtCicloStatus(e){
-  if(!e.ultimaInspecaoEm)return{label:'Nunca inspecionado',cls:'badge-na',dias:null};
+  if(!e.ultimaInspecaoEm)return{label:'Nunca inspecionado',cls:'badge-na',dias:null,key:'nunca'};
   const ultima=new Date(e.ultimaInspecaoEm);
   const proxima=new Date(ultima);proxima.setDate(proxima.getDate()+30);
   const hoje=new Date();
   const diffDias=Math.ceil((proxima-hoje)/(1000*60*60*24));
-  if(diffDias<0)return{label:'Vencido h\u00e1 '+Math.abs(diffDias)+'d',cls:'badge-nc',dias:diffDias};
-  if(diffDias<=5)return{label:'Em '+diffDias+'d',cls:'badge-warn',dias:diffDias};
-  return{label:'Em dia ('+diffDias+'d)',cls:'badge-ok',dias:diffDias};
+  if(diffDias<0)return{label:'Vencido h\u00e1 '+Math.abs(diffDias)+'d',cls:'badge-nc',dias:diffDias,key:'vencido'};
+  if(diffDias<=5)return{label:'Em '+diffDias+'d',cls:'badge-warn',dias:diffDias,key:'atencao'};
+  return{label:'Em dia ('+diffDias+'d)',cls:'badge-ok',dias:diffDias,key:'ok'};
+}
+let extFiltroCiclo='';
+function filtrarCiclo(key){
+  extFiltroCiclo=extFiltroCiclo===key?'':key;
+  document.getElementById('filter-ext-ciclo').value=extFiltroCiclo;
+  refreshExtintoresList();
 }
 function getExtStatus(e){
   if(!e.dataValidade)return 'sem_dado';
@@ -1483,6 +1497,7 @@ function refreshExtintoresKPIs(){
   const atencao=state_extintores.filter(function(e){return getExtStatus(e)==='atencao';}).length;
   const semDado=state_extintores.filter(function(e){return getExtStatus(e)==='sem_dado';}).length;
   const cicloVencido=state_extintores.filter(function(e){const c=getExtCicloStatus(e);return c.dias!==null&&c.dias<0;}).length;
+  const nuncaInsp=state_extintores.filter(function(e){return getExtCicloStatus(e).key==='nunca';}).length;
   const trintaDiasAtras=new Date();trintaDiasAtras.setDate(trintaDiasAtras.getDate()-30);
   const inspecionados=state_extintores.filter(function(e){return e.ultimaInspecaoEm&&new Date(e.ultimaInspecaoEm)>=trintaDiasAtras;}).length;
   document.getElementById('ext-kpi-vencidos').textContent=vencidos;
@@ -1491,12 +1506,14 @@ function refreshExtintoresKPIs(){
   document.getElementById('ext-kpi-inspecionados').textContent=inspecionados;
   const kpiCiclo=document.getElementById('ext-kpi-ciclo');
   if(kpiCiclo)kpiCiclo.textContent=cicloVencido;
+  const kpiNunca=document.getElementById('ext-kpi-nunca');
+  if(kpiNunca)kpiNunca.textContent=nuncaInsp;
   const badge=document.getElementById('badge-extintores');
   if(badge){
-    const total=vencidos+atencao+cicloVencido;
+    const total=vencidos+atencao+cicloVencido+nuncaInsp;
     badge.textContent=total;
-    badge.style.background=(vencidos>0||cicloVencido>0)?'rgba(176,58,46,.3)':total>0?'rgba(157,101,48,.3)':'rgba(195,204,154,.15)';
-    badge.style.color=(vencidos>0||cicloVencido>0)?'#e07c74':total>0?'#c9955a':'var(--sage)';
+    badge.style.background=(vencidos>0||cicloVencido>0||nuncaInsp>0)?'rgba(176,58,46,.3)':total>0?'rgba(157,101,48,.3)':'rgba(195,204,154,.15)';
+    badge.style.color=(vencidos>0||cicloVencido>0||nuncaInsp>0)?'#e07c74':total>0?'#c9955a':'var(--sage)';
   }
 }
 function getHidroStatus(e){
@@ -1531,12 +1548,14 @@ function refreshExtintoresList(){
   const search=(document.getElementById('search-ext')||{value:''}).value.toLowerCase();
   const tipoF=(document.getElementById('filter-ext-tipo')||{value:''}).value;
   const statusF=(document.getElementById('filter-ext-status')||{value:''}).value;
+  const cicloF=(document.getElementById('filter-ext-ciclo')||{value:''}).value;
   let list=state_extintores;
   if(search)list=list.filter(function(e){
     return (e.local||'').toLowerCase().indexOf(search)>=0||(e.numeroIdentificacao||'').toLowerCase().indexOf(search)>=0||(e.hdNumero||'').toLowerCase().indexOf(search)>=0||(e.classe||'').toLowerCase().indexOf(search)>=0;
   });
   if(tipoF)list=list.filter(function(e){return e.tipo===tipoF;});
   if(statusF)list=list.filter(function(e){return getExtStatus(e)===statusF;});
+  if(cicloF)list=list.filter(function(e){return getExtCicloStatus(e).key===cicloF;});
   if(list.length===0){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhum item encontrado</td></tr>';return;}
   tbody.innerHTML=list.map(function(e){
     const st=getExtStatus(e);
@@ -4061,6 +4080,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var sExt=document.getElementById('search-ext');if(sExt)sExt.addEventListener('input',refreshExtintoresList);
     var ftExt=document.getElementById('filter-ext-tipo');if(ftExt)ftExt.addEventListener('change',refreshExtintoresList);
     var fsExt=document.getElementById('filter-ext-status');if(fsExt)fsExt.addEventListener('change',refreshExtintoresList);
+    var fcExt=document.getElementById('filter-ext-ciclo');if(fcExt)fcExt.addEventListener('change',refreshExtintoresList);
     var sPlan=document.getElementById('search-plan');if(sPlan)sPlan.addEventListener('input',refreshAtividadesList);
     var ftPlan=document.getElementById('filter-plan-tecnico');if(ftPlan)ftPlan.addEventListener('change',refreshAtividadesList);
     var fsPlan=document.getElementById('filter-plan-status');if(fsPlan)fsPlan.addEventListener('change',refreshAtividadesList);
