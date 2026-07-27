@@ -659,7 +659,7 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
         <option value="cancelada">Cancelada</option>
       </select>
       <input class="form-input" type="month" id="filter-plan-mes" style="width:auto">
-      <button class="btn btn-primary btn-sm" onclick="openNovaAtividade()">+ Nova Atividade</button>
+      <button class="btn btn-primary btn-sm" id="btn-nova-atividade" onclick="openNovaAtividade()">+ Nova Atividade</button>
     </div>
     <div class="card" style="padding:0;overflow:auto">
       <table class="data-table" style="min-width:860px">
@@ -672,7 +672,7 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
   <div id="pl-view-ppcr" style="display:none">
     <div class="search-bar">
       <select class="form-select" style="width:auto" id="filter-ppcr-ano"></select>
-      <button class="btn btn-primary btn-sm" onclick="openNovaMetaPPCR()">+ Nova Meta PPCR</button>
+      <button class="btn btn-primary btn-sm" id="btn-nova-meta-ppcr" onclick="openNovaMetaPPCR()">+ Nova Meta PPCR</button>
     </div>
     <div class="card" style="padding:0;overflow:auto">
       <table class="data-table" style="min-width:760px">
@@ -1621,6 +1621,18 @@ function verEtiqueta(id){
 }
 
 /* ============ PLANEJAMENTO SESMT (PPCR + PMS) ============ */
+const PLANEJAMENTO_GESTOR_PERFIL='Executivo SST';
+function getPerfilAtivo(){
+  const userId=_loggedUserId||(parseInt((document.getElementById('user-switcher')||{value:'1'}).value)||1);
+  const user=state.usuarios.find(function(u){return u.id===userId;});
+  return user?PERFIS.find(function(p){return p.id===user.perfilId;}):null;
+}
+function isPlanejamentoGestor(){
+  const perfil=getPerfilAtivo();
+  if(!perfil)return false;
+  return perfil.permissoes.indexOf('todos')>=0||perfil.nome===PLANEJAMENTO_GESTOR_PERFIL;
+}
+
 let state_atividades=[];
 let state_ppcr_metas=[];
 let editingAtividadeId=null;
@@ -1775,6 +1787,8 @@ function refreshAtividadesList(){
   if(mesF)list=list.filter(function(a){return (a.dataPrevista||'').substring(0,7)===mesF;});
   list.sort(function(a,b){return a.dataPrevista<b.dataPrevista?-1:1;});
   if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma atividade encontrada</td></tr>';return;}
+  const gestor=isPlanejamentoGestor();
+  const btnNova=document.getElementById('btn-nova-atividade');if(btnNova)btnNova.style.display=gestor?'':'none';
   const prioMap={alta:'badge-nc',media:'badge-warn',baixa:'badge-na'};
   tbody.innerHTML=list.map(function(a){
     const status=getAtividadeStatus(a);
@@ -1785,10 +1799,14 @@ function refreshAtividadesList(){
     let acoes='';
     if(status==='planejada'||status==='atrasada'){
       acoes+='<button class="btn btn-outline btn-sm" onclick="openMarcarRealizada(\''+a.id+'\')">&#9989;</button> ';
-      acoes+='<button class="btn btn-outline btn-sm" onclick="openEditAtividade(\''+a.id+'\')">&#9998;</button> ';
-      acoes+='<button class="btn btn-outline btn-sm" style="border-color:rgba(176,58,46,.4);color:#e07c74" onclick="openCancelarAtividade(\''+a.id+'\')">&#128683;</button>';
-    }else{
+      if(gestor){
+        acoes+='<button class="btn btn-outline btn-sm" onclick="openEditAtividade(\''+a.id+'\')">&#9998;</button> ';
+        acoes+='<button class="btn btn-outline btn-sm" style="border-color:rgba(176,58,46,.4);color:#e07c74" onclick="openCancelarAtividade(\''+a.id+'\')">&#128683;</button>';
+      }
+    }else if(gestor){
       acoes+='<button class="btn btn-outline btn-sm" onclick="openEditAtividade(\''+a.id+'\')">&#9998;</button>';
+    }else{
+      acoes='<span style="color:var(--mist);font-size:11px">\u2014</span>';
     }
     return '<tr><td>'+dataFmt+'</td><td>'+a.tecnicoNome+'</td><td>'+(TIPO_ATIVIDADE_LABELS[a.tipoAtividade]||a.tipoAtividade)+(a.titulo?' &middot; '+a.titulo:'')+'</td><td>'+(a.baseLocal||'\u2014')+'</td><td><span class="badge '+prioMap[a.prioridade]+'">'+a.prioridade+'</span></td><td>'+statusAtividadeBadgeHTML(status)+'</td><td>'+vinculo+'</td><td style="white-space:nowrap">'+acoes+'</td></tr>';
   }).join('');
@@ -1800,6 +1818,8 @@ function refreshPPCRList(){
   const anoF=parseInt((document.getElementById('filter-ppcr-ano')||{value:new Date().getFullYear()}).value);
   let list=state_ppcr_metas.filter(function(m){return m.ano===anoF;});
   list.sort(function(a,b){return a.trimestre-b.trimestre;});
+  const gestor=isPlanejamentoGestor();
+  const btnNovaMeta=document.getElementById('btn-nova-meta-ppcr');if(btnNovaMeta)btnNovaMeta.style.display=gestor?'':'none';
   if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma meta cadastrada para '+anoF+'</td></tr>';return;}
   tbody.innerHTML=list.map(function(m){
     const tecnico=m.tecnicoId?(state.usuarios.find(function(u){return String(u.id)===String(m.tecnicoId);})||{}).nome||'\u2014':'Toda a equipe';
@@ -1813,12 +1833,14 @@ function refreshPPCRList(){
     }).length;
     const pct=m.metaQuantidade>0?Math.min(100,Math.round(realizado/m.metaQuantidade*100)):0;
     const cor=pct>=100?'#5ebc8a':pct>=50?'#c9955a':'#e07c74';
-    return '<tr><td>T'+m.trimestre+'</td><td>'+(TIPO_ATIVIDADE_LABELS[m.tipoAtividade]||m.tipoAtividade)+'</td><td>'+(m.baseLocal||'Todas')+'</td><td>'+tecnico+'</td><td>'+m.metaQuantidade+'</td><td>'+realizado+'</td><td style="color:'+cor+';font-weight:700">'+pct+'%</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openEditMetaPPCR(\''+m.id+'\')">&#9998;</button></td></tr>';
+    const acoes=gestor?'<button class="btn btn-outline btn-sm" onclick="openEditMetaPPCR(\''+m.id+'\')">&#9998;</button>':'<span style="color:var(--mist);font-size:11px">\u2014</span>';
+    return '<tr><td>T'+m.trimestre+'</td><td>'+(TIPO_ATIVIDADE_LABELS[m.tipoAtividade]||m.tipoAtividade)+'</td><td>'+(m.baseLocal||'Todas')+'</td><td>'+tecnico+'</td><td>'+m.metaQuantidade+'</td><td>'+realizado+'</td><td style="color:'+cor+';font-weight:700">'+pct+'%</td><td style="white-space:nowrap">'+acoes+'</td></tr>';
   }).join('');
 }
 
 /* --- CRUD Atividade --- */
 function openNovaAtividade(){
+  if(!isPlanejamentoGestor()){alert('Apenas o Executivo SST pode criar novas atividades de planejamento.');return;}
   editingAtividadeId=null;
   document.getElementById('modal-atividade-title').textContent='\ud83d\udcc6 Nova Atividade';
   document.getElementById('pa-id').value='';
@@ -1834,6 +1856,7 @@ function openNovaAtividade(){
   openModal('modal-atividade');
 }
 function openEditAtividade(id){
+  if(!isPlanejamentoGestor()){alert('Apenas o Executivo SST pode editar atividades de planejamento.');return;}
   const a=state_atividades.find(function(a){return String(a.id)===String(id);});
   if(!a)return;
   editingAtividadeId=id;
@@ -1923,6 +1946,7 @@ async function confirmarMarcarRealizada(){
 /* --- Cancelar atividade --- */
 let caCurrentId=null;
 function openCancelarAtividade(id){
+  if(!isPlanejamentoGestor()){alert('Apenas o Executivo SST pode cancelar atividades de planejamento.');return;}
   caCurrentId=id;
   document.getElementById('ca-id').value=id;
   document.getElementById('ca-motivo').value='';
@@ -1942,6 +1966,7 @@ async function confirmarCancelarAtividade(){
 
 /* --- CRUD Meta PPCR --- */
 function openNovaMetaPPCR(){
+  if(!isPlanejamentoGestor()){alert('Apenas o Executivo SST pode criar metas PPCR.');return;}
   editingPPCRId=null;
   document.getElementById('modal-ppcr-title').textContent='\ud83d\udcc5 Nova Meta PPCR';
   document.getElementById('pp-id').value='';
@@ -1956,6 +1981,7 @@ function openNovaMetaPPCR(){
   openModal('modal-ppcr');
 }
 function openEditMetaPPCR(id){
+  if(!isPlanejamentoGestor()){alert('Apenas o Executivo SST pode editar metas PPCR.');return;}
   const m=state_ppcr_metas.find(function(m){return String(m.id)===String(id);});
   if(!m)return;
   editingPPCRId=id;
