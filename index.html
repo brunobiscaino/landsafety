@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>LandSafety ISP &middot; CENA</title>
+<link rel="manifest" href="/landsafety/manifest.json">
+<meta name="theme-color" content="#112F3D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LandSafety">
+<link rel="apple-touch-icon" href="/landsafety/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/landsafety/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
 :root{--navy:#112F3D;--forest:#1D4038;--sage:#C3CC9A;--mist:#C4CFCC;--cream:#EDF0EB;--white:#FFFFFF;--err:#B03A2E;--ok:#2E7D52;--warn:#9D6530;--diag:repeating-linear-gradient(45deg,rgba(195,204,154,.04) 0,rgba(195,204,154,.04) 1px,transparent 1px,transparent 8px);--card-bg:rgba(255,255,255,0.04);--card-border:rgba(195,204,154,0.15)}
@@ -4146,6 +4154,16 @@ function syncOfflineQueue(){
   }catch(e){console.error('syncOfflineQueue:',e);}
 }
 
+</script>
+<script>
+/* Registro do Service Worker (PWA — instalação + cache offline do app shell) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/landsafety/sw.js')
+      .then(function(reg){console.log('[PWA] Service Worker registrado:',reg.scope);})
+      .catch(function(err){console.warn('[PWA] Falha ao registrar Service Worker:',err);});
+  });
+}
 </script>
 </body>
 </html>
