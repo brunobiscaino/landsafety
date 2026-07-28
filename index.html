@@ -139,9 +139,18 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
 .audit-desc{font-size:13px;color:var(--mist);line-height:1.6;max-width:480px;margin:0 auto 24px}
 .bottom-nav{display:none;background:var(--forest);border-top:1px solid var(--card-border);position:sticky;bottom:0;z-index:200}
 .bottom-nav-items{display:flex}
-.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;cursor:pointer;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mist);font-family:'Barlow Condensed',sans-serif;font-weight:700;border-top:3px solid transparent;transition:all .15s}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 4px;min-height:56px;cursor:pointer;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mist);font-family:'Barlow Condensed',sans-serif;font-weight:700;border-top:3px solid transparent;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .bn-item.active{color:var(--sage);border-top-color:var(--sage);background:rgba(195,204,154,.06)}
-.bn-icon{font-size:20px}
+.bn-icon{font-size:22px}
+.mobile-more-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:flex-end}
+.mobile-more-overlay.open{display:flex}
+.mobile-more-sheet{background:var(--forest);border-top:2px solid var(--sage);width:100%;max-height:70vh;overflow-y:auto;padding:8px 0 max(12px,env(safe-area-inset-bottom));animation:sheetUp .2s ease-out}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mobile-more-handle{width:36px;height:4px;background:var(--mist);opacity:.4;margin:8px auto 12px;border-radius:2px}
+.mobile-more-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--sage);opacity:.7;padding:0 20px 10px}
+.mobile-more-item{display:flex;align-items:center;gap:12px;padding:14px 20px;font-size:14px;color:var(--white);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mobile-more-item:active{background:rgba(195,204,154,.08)}
+.mobile-more-item .nav-icon{font-size:18px;width:22px;text-align:center}
 .empty-state{text-align:center;padding:60px 20px;color:var(--mist);opacity:.5}
 .empty-state .ei{font-size:40px;margin-bottom:12px}
 .empty-state p{font-size:13px;letter-spacing:1px}
@@ -219,6 +228,7 @@ body.tema-claro .cs-val{color:var(--navy) !important}
 body.tema-claro .audit-desc{color:#5b6b66 !important}
 body.tema-claro .audit-placeholder{border-color:var(--mist) !important}
 body.tema-claro .bottom-nav{background:var(--forest) !important}
+body.tema-claro .mobile-more-sheet{background:var(--forest) !important}
 body.tema-claro .btn-outline{color:var(--forest) !important;border-color:var(--forest) !important}
 body.tema-claro .btn-outline:hover{background:rgba(29,64,56,.08) !important}
 body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--navy) !important;border-color:var(--mist) !important}
@@ -759,16 +769,30 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
 </div><!-- /main-content -->
 </div><!-- /app-shell -->
 
-<!-- BOTTOM NAV -->
+<!-- BOTTOM NAV (Modo Campo — 4 essenciais + Mais) -->
 <div class="bottom-nav">
   <div class="bottom-nav-items">
-    <div class="bn-item active" id="bn-dashboard" data-view="dashboard" onclick="showView('dashboard')"><span class="bn-icon">&#128202;</span>Dashboard</div>
-    <div class="bn-item" id="bn-nova-inspecao" data-view="nova-inspecao" onclick="showView('nova-inspecao')"><span class="bn-icon">&#128269;</span>Inspecionar</div>
+    <div class="bn-item active" id="bn-nova-inspecao" data-view="nova-inspecao" onclick="showView('nova-inspecao')"><span class="bn-icon">&#128269;</span>Inspecionar</div>
+    <div class="bn-item" id="bn-extintores" data-view="extintores" onclick="showView('extintores')"><span class="bn-icon">&#129535;</span>Extintores</div>
     <div class="bn-item" id="bn-nao-conformidades" data-view="nao-conformidades" onclick="showView('nao-conformidades')"><span class="bn-icon">&#9888;</span>NCs</div>
     <div class="bn-item" id="bn-pendencias" data-view="pendencias" onclick="showView('pendencias')"><span class="bn-icon">&#128204;</span>Pend&ecirc;ncias</div>
-    <div class="bn-item" id="bn-alertas" data-view="alertas" onclick="showView('alertas')"><span class="bn-icon">&#128276;</span>Alertas</div>
-    <div class="bn-item" id="bn-inspecoes" data-view="inspecoes" onclick="showView('inspecoes')"><span class="bn-icon">&#128203;</span>Hist&oacute;rico</div>
-    <div class="bn-item" id="bn-colaboradores" data-view="colaboradores" onclick="showView('colaboradores')"><span class="bn-icon">&#128119;</span>Equipe</div>
+    <div class="bn-item" id="bn-mais" onclick="toggleMoreMenu()"><span class="bn-icon">&#8942;</span>Mais</div>
+  </div>
+</div>
+
+<!-- MOBILE MORE MENU (bottom sheet) -->
+<div class="mobile-more-overlay" id="mobileMoreOverlay" onclick="if(event.target===this)closeMoreMenu()">
+  <div class="mobile-more-sheet" id="mobileMoreSheet">
+    <div class="mobile-more-handle"></div>
+    <div class="mobile-more-title">Mais op&ccedil;&otilde;es</div>
+    <div class="mobile-more-item" onclick="showView('dashboard');closeMoreMenu()"><span class="nav-icon">&#128202;</span> Dashboard</div>
+    <div class="mobile-more-item" onclick="showView('inspecoes');closeMoreMenu()"><span class="nav-icon">&#128203;</span> Hist&oacute;rico de Inspe&ccedil;&otilde;es</div>
+    <div class="mobile-more-item" onclick="showView('alertas');closeMoreMenu()"><span class="nav-icon">&#128276;</span> Alertas</div>
+    <div class="mobile-more-item" onclick="showView('colaboradores');closeMoreMenu()"><span class="nav-icon">&#128119;</span> Colaboradores</div>
+    <div class="mobile-more-item" onclick="showView('usuarios');closeMoreMenu()"><span class="nav-icon">&#128100;</span> Usu&aacute;rios &amp; Perfis</div>
+    <div class="mobile-more-item" onclick="showView('empresa');closeMoreMenu()"><span class="nav-icon">&#127970;</span> Empresa</div>
+    <div class="mobile-more-item" onclick="showView('planejamento');closeMoreMenu()"><span class="nav-icon">&#128198;</span> Planejamento SESMT</div>
+    <div class="mobile-more-item" onclick="showView('auditoria');closeMoreMenu()"><span class="nav-icon">&#128270;</span> Auditoria</div>
   </div>
 </div>
 
@@ -2107,6 +2131,17 @@ let colabIdSeq=-1;
 let userIdSeq=-1;
 let perfilIdSeq=-1;
 
+/* ============ NAV MOBILE (Mais) ============ */
+function toggleMoreMenu(){
+  const ov=document.getElementById('mobileMoreOverlay');
+  if(ov)ov.classList.toggle('open');
+}
+function closeMoreMenu(){
+  const ov=document.getElementById('mobileMoreOverlay');
+  if(ov)ov.classList.remove('open');
+}
+function isCampoMobile(){return window.innerWidth<=768;}
+
 /* ============ NAV ============ */
 function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -2511,6 +2546,8 @@ function fazerLogin(){
   refreshDashboard();
   updateAlertBadge();
   updatePendenciasBadge();
+  /* Modo Campo: celular abre direto em Nova Inspeção (Dashboard é pouco útil em campo) */
+  if(isCampoMobile()){showView('nova-inspecao');}
   /* M4: pr\u00e9-selecionar agente executor */
   if(state.selectedAgenteIds.indexOf(user.id)<0){
     state.selectedAgenteIds=[user.id];
