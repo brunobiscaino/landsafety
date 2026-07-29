@@ -111,6 +111,24 @@ tr.clickable:hover td{background:rgba(195,204,154,.06)}
 .cl-btn.sel-c{background:rgba(46,125,82,.25);color:#5ebc8a}
 .cl-btn.sel-nc{background:rgba(176,58,46,.25);color:#e07c74}
 .cl-btn.sel-na{background:rgba(196,207,204,.1);color:var(--mist)}
+.mt-cat{padding:14px 2px 6px;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);opacity:.85}
+.mt-item{display:grid;grid-template-columns:1fr auto;border:1px solid var(--card-border);border-top:none;background:rgba(255,255,255,.02)}
+.mt-item:first-of-type{border-top:1px solid var(--card-border)}
+.mt-text{padding:11px 14px;font-size:12.5px;color:var(--white);line-height:1.4;display:flex;align-items:center}
+.mt-actions{display:flex;align-items:stretch;border-left:1px solid var(--card-border)}
+.mt-btn{width:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;border:none;background:transparent;color:var(--mist)}
+.mt-btn:not(:last-child){border-right:1px solid var(--card-border)}
+.mt-btn.sel-low{background:rgba(176,58,46,.25);color:#e07c74}
+.mt-btn.sel-mid{background:rgba(157,101,48,.25);color:#c9955a}
+.mt-btn.sel-high{background:rgba(46,125,82,.25);color:#5ebc8a}
+.mt-score-box{display:flex;align-items:center;justify-content:space-between;background:rgba(195,204,154,.06);border:1px solid var(--card-border);padding:12px 16px;margin-bottom:16px}
+.mt-score-num{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--white)}
+body.tema-claro .mt-item{background:#fff !important;border-color:var(--mist) !important}
+body.tema-claro .mt-text{color:var(--navy) !important}
+body.tema-claro .mt-actions{border-color:var(--mist) !important}
+body.tema-claro .mt-btn{color:#5b6b66 !important;border-color:var(--mist) !important}
+body.tema-claro .mt-score-box{background:#f5f7f2 !important;border-color:var(--mist) !important}
+body.tema-claro .mt-score-num{color:var(--navy) !important}
 .cl-footer{position:sticky;bottom:0;background:var(--forest);border-top:2px solid var(--sage);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .cl-footer-stats{display:flex;gap:16px}
 .cl-stat{text-align:center}
@@ -333,6 +351,7 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <div class="nav-item" data-view="pendencias" onclick="showView('pendencias')"><span class="nav-icon">&#128204;</span> Minhas Pend&ecirc;ncias <span class="nav-badge" id="badge-pendencias" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="alertas" onclick="showView('alertas')"><span class="nav-icon">&#128276;</span> Alertas <span class="nav-badge" id="badge-alertas" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="extintores" onclick="showView('extintores')"><span class="nav-icon">&#129535;</span> Extintores <span class="nav-badge" id="badge-extintores" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
+    <div class="nav-item" data-view="motoristas" onclick="showView('motoristas')"><span class="nav-icon">&#128663;</span> Avalia&ccedil;&atilde;o Motoristas <span class="nav-badge" id="badge-motoristas" style="background:rgba(176,58,46,.2);color:#e07c74">0</span></div>
     <div class="nav-item" data-view="planejamento" onclick="showView('planejamento')"><span class="nav-icon">&#128198;</span> Planejamento SESMT <span class="nav-badge" id="badge-planejamento" style="background:rgba(195,204,154,.15);color:var(--sage)">0</span></div>
     <div class="nav-item" data-view="auditoria" onclick="showView('auditoria')"><span class="nav-icon">&#128270;</span> Auditoria <span class="nav-badge" style="background:rgba(157,101,48,.3);color:#c9955a">EM BREVE</span></div>
   </div>
@@ -654,6 +673,37 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
 </div>
 </div>
 
+<!-- AVALIA\u00c7\u00c3O DE MOTORISTAS -->
+<div class="view" id="view-motoristas">
+<div class="view-inner">
+  <div class="page-header"><div class="page-eyebrow">Seguran&ccedil;a Vi&aacute;ria &middot; CENA</div><div class="page-title">Avalia&ccedil;&atilde;o de Motoristas</div>
+    <div class="page-sub">An&aacute;lise comportamental de tr&acirc;nsito &middot; observador a bordo &middot; escala 1 (cr&iacute;tico) a 5 (excelente)</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-val" id="mot-kpi-total">0</div><div class="kpi-lbl">Avalia&ccedil;&otilde;es registradas</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="mot-kpi-media">&mdash;</div><div class="kpi-lbl">Pontua&ccedil;&atilde;o m&eacute;dia</div></div>
+    <div class="kpi-card clickable" onclick="filtrarMotoristasClasse('alto_risco')"><div class="kpi-val red" id="mot-kpi-alto">0</div><div class="kpi-lbl">Avalia&ccedil;&otilde;es Alto Risco</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="mot-kpi-motoristas">0</div><div class="kpi-lbl">Motoristas avaliados</div></div>
+  </div>
+  <div class="search-bar">
+    <input class="search-input" placeholder="Buscar por motorista..." id="search-mot">
+    <select class="form-select" style="width:auto" id="filter-mot-classe">
+      <option value="">Todas as classifica&ccedil;&otilde;es</option>
+      <option value="baixo_risco">Baixo Risco</option>
+      <option value="medio_risco">M&eacute;dio Risco</option>
+      <option value="alto_risco">Alto Risco</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="openNovaAvaliacaoMotorista()">+ Nova Avalia&ccedil;&atilde;o</button>
+  </div>
+  <div class="card" style="padding:0;overflow:auto">
+    <table class="data-table" style="min-width:760px">
+      <thead><tr><th>Data</th><th>Motorista</th><th>Ve&iacute;culo/Placa</th><th>Pontua&ccedil;&atilde;o</th><th>Classifica&ccedil;&atilde;o</th><th>Avaliador</th><th>Evid&ecirc;ncia</th></tr></thead>
+      <tbody id="tbody-motoristas"><tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma avalia&ccedil;&atilde;o registrada</td></tr></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
 <!-- PLANEJAMENTO SESMT -->
 <div class="view" id="view-planejamento">
 <div class="view-inner">
@@ -800,6 +850,7 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <div class="mobile-more-item" onclick="showView('usuarios');closeMoreMenu()"><span class="nav-icon">&#128100;</span> Usu&aacute;rios &amp; Perfis</div>
     <div class="mobile-more-item" onclick="showView('empresa');closeMoreMenu()"><span class="nav-icon">&#127970;</span> Empresa</div>
     <div class="mobile-more-item" onclick="showView('planejamento');closeMoreMenu()"><span class="nav-icon">&#128198;</span> Planejamento SESMT</div>
+    <div class="mobile-more-item" onclick="showView('motoristas');closeMoreMenu()"><span class="nav-icon">&#128663;</span> Avalia&ccedil;&atilde;o Motoristas</div>
     <div class="mobile-more-item" onclick="showView('auditoria');closeMoreMenu()"><span class="nav-icon">&#128270;</span> Auditoria</div>
   </div>
 </div>
@@ -1079,6 +1130,42 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <div style="margin-top:20px;display:flex;gap:10px">
       <button class="btn btn-primary" onclick="salvarExtintor()">SALVAR</button>
       <button class="btn btn-outline" onclick="closeModal('modal-extintor')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AVALIA\u00c7\u00c3O DE MOTORISTA -->
+<div class="overlay" id="modal-motorista">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('modal-motorista')">&#10005;</button>
+    <div class="modal-title">&#128663; Avalia&ccedil;&atilde;o Comportamental de Tr&acirc;nsito</div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label class="form-label">Motorista avaliado</label><select class="form-select" id="mt-motorista"></select></div>
+      <div class="form-group"><label class="form-label">Ve&iacute;culo / Placa</label><input class="form-input" id="mt-placa" placeholder="Ex: OYE-1234"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">Avaliador / Observador a bordo</label><select class="form-select" id="mt-avaliador"></select></div>
+
+    <div class="mt-score-box">
+      <div><div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--sage)">Pontua&ccedil;&atilde;o obtida</div><div class="mt-score-num" id="mt-score-total">75 / 75</div></div>
+      <span class="badge badge-ok" id="mt-score-badge">Baixo Risco &middot; Perfil Seguro</span>
+    </div>
+
+    <div id="mt-criterios" style="border-top:1px solid var(--card-border);margin-bottom:16px"></div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Foto da avalia&ccedil;&atilde;o / evid&ecirc;ncia (opcional, recomendado em caso de desvio)</label>
+      <label class="photo-upload" style="display:block;border:2px dashed var(--card-border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;font-size:12px;color:var(--mist)" id="mt-foto-preview">&#128247; Tirar foto ou anexar</label>
+      <input type="file" accept="image/*" capture="environment" id="mt-foto-input" style="display:none" onchange="handleMtFotoCapture(event)">
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Observa&ccedil;&otilde;es de campo</label>
+      <textarea class="form-input" id="mt-obs" rows="3" placeholder="Ex: freada brusca ao aproximar-se de cruzamento, uso de celular durante manobra..."></textarea>
+    </div>
+    <div class="page-sub" style="margin-bottom:14px">&#128205; GPS e hor&aacute;rio s&atilde;o capturados automaticamente ao salvar.</div>
+
+    <div style="margin-top:6px;display:flex;gap:10px">
+      <button class="btn btn-primary" id="mt-btn-salvar" onclick="salvarAvaliacaoMotorista()">SALVAR AVALIA&Ccedil;&Atilde;O</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-motorista')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -2108,18 +2195,19 @@ const MODULOS=[
  {key:'empresa',label:'Empresa'},
  {key:'alertas',label:'Alertas'},
  {key:'extintores',label:'Extintores'},
+ {key:'motoristas',label:'Avalia\u00e7\u00e3o Motoristas'},
  {key:'planejamento',label:'Planejamento SESMT'},
  {key:'auditoria',label:'Auditoria'}
 ];
 let PERFIS=[
  {id:1,nome:'Administrador',permissoes:['todos']},
- {id:2,nome:'Gerente de Contratos',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','usuarios','empresa','alertas','extintores','planejamento','auditoria']},
- {id:3,nome:'Executivo SST',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores','planejamento']},
- {id:4,nome:'T\u00e9cnico de Seguran\u00e7a',permissoes:['nova-inspecao','inspecoes','nao-conformidades','extintores','planejamento']},
- {id:5,nome:'Supervisor',permissoes:['dashboard','inspecoes','nao-conformidades','alertas','extintores','planejamento']},
+ {id:2,nome:'Gerente de Contratos',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','usuarios','empresa','alertas','extintores','motoristas','planejamento','auditoria']},
+ {id:3,nome:'Executivo SST',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores','motoristas','planejamento']},
+ {id:4,nome:'T\u00e9cnico de Seguran\u00e7a',permissoes:['nova-inspecao','inspecoes','nao-conformidades','extintores','motoristas','planejamento']},
+ {id:5,nome:'Supervisor',permissoes:['dashboard','inspecoes','nao-conformidades','alertas','extintores','motoristas','planejamento']},
  {id:6,nome:'Prestadora',permissoes:['nao-conformidades']},
  {id:7,nome:'Encarregado',permissoes:['nova-inspecao','inspecoes','nao-conformidades']},
- {id:8,nome:'Coordenador',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores','planejamento']}
+ {id:8,nome:'Coordenador',permissoes:['dashboard','nova-inspecao','inspecoes','nao-conformidades','colaboradores','alertas','extintores','motoristas','planejamento']}
 ];
 const RESPONSAVEL_PERFIS=['Encarregado','Supervisor','T\u00e9cnico de Seguran\u00e7a','Coordenador','Gerente de Contratos'];
 const VALIDATOR_PERFIS=['Gerente de Contratos','Coordenador','Supervisor','Executivo SST'];
@@ -2128,7 +2216,8 @@ const state={
   inspecoes:[],colaboradores:[],selectedColabIds:[],
   usuarios:[{id:1,nome:'Administrador',mat:'0000',perfilId:1}],
   selectedAgenteIds:[1],
-  ncs:[],currentInsp:null,checklist:{},activeSection:'GV'
+  ncs:[],currentInsp:null,checklist:{},activeSection:'GV',
+  avaliacoesMotoristas:[]
 };
 let inspGPS=null;
 let pendingNC=null;
@@ -2138,6 +2227,36 @@ let pendingECFoto=null;
 let colabIdSeq=-1;
 let userIdSeq=-1;
 let perfilIdSeq=-1;
+/* ============ AVALIA\u00c7\u00c3O DE MOTORISTAS ============ */
+const CRITERIOS_MOTORISTA=[
+ {cat:'Condu\u00e7\u00e3o Defensiva e Seguran\u00e7a',items:[
+   {key:'distancia_seguranca',label:'Mant\u00e9m espa\u00e7o seguro e proporcional em rela\u00e7\u00e3o ao ve\u00edculo da frente.'},
+   {key:'uso_retrovisores',label:'Consulta os retrovisores antes de qualquer mudan\u00e7a de faixa.'},
+   {key:'adaptacao_velocidade',label:'Ajusta a velocidade \u00e0s condi\u00e7\u00f5es de tr\u00e1fego, piso e clima.'},
+   {key:'antecipacao_riscos',label:'Antecipa e reage a tempo a pedestres e outros ve\u00edculos.'},
+   {key:'sinalizacao_manobras',label:'Usa a seta de mudan\u00e7a de dire\u00e7\u00e3o com a devida antecedência.'}
+ ]},
+ {cat:'Foco e Aten\u00e7\u00e3o (Evitar Distra\u00e7\u00f5es)',items:[
+   {key:'foco_via',label:'Evita manusear celular, GPS ou r\u00e1dio com o ve\u00edculo em movimento.'},
+   {key:'alerta_cansaco',label:'Mant\u00e9m postura correta, sem sinais vis\u00edveis de sonol\u00eancia.'},
+   {key:'abordagem_cruzamentos',label:'Reduz a velocidade e fica vigilante em cruzamentos e rotat\u00f3rias.'}
+ ]},
+ {cat:'Efici\u00eancia e Mec\u00e2nica (Eco-condu\u00e7\u00e3o)',items:[
+   {key:'suavidade_travagens',label:'Evita frenagens bruscas, recorrendo \u00e0 desacelera\u00e7\u00e3o gradual do motor.'},
+   {key:'controlo_aceleracao',label:'Arranca de forma suave, sem acelera\u00e7\u00f5es ou rota\u00e7\u00f5es excessivas.'},
+   {key:'gestao_mudancas',label:'Realiza a troca de marchas no momento adequado (otimiza\u00e7\u00e3o do motor).'},
+   {key:'gestao_ralenti',label:'Desliga o motor em paradas ou imobiliza\u00e7\u00f5es prolongadas.'}
+ ]},
+ {cat:'Postura Emocional e Respeito',items:[
+   {key:'gestao_stress',label:'Mant\u00e9m a calma diante de congestionamentos ou provoca\u00e7\u00f5es de terceiros.'},
+   {key:'cordialidade',label:'Cede passagem de forma clara, segura e cordial quando necess\u00e1rio.'},
+   {key:'uso_buzina',label:'Usa a buzina estritamente para prevenir acidentes iminentes.'}
+ ]}
+];
+let mtNotas={};
+let mtFoto=null;
+let mtGPS=null;
+function motoristaCriteriosFlat(){return [].concat.apply([],CRITERIOS_MOTORISTA.map(function(g){return g.items;}));}
 
 /* ============ NAV MOBILE (Mais) ============ */
 function toggleMoreMenu(){
@@ -2422,6 +2541,152 @@ function handleFotoCapture(e){
   const file=e.target.files[0];
   if(!file)return;
   processPhotoFile(file,function(foto){pendingFoto=foto;},'nc-foto-preview');
+}
+
+/* ============ AVALIA\u00c7\u00c3O DE MOTORISTAS ============ */
+async function loadAvaliacoesMotoristas(){
+  const rows=await sbSelect('avaliacoes_motoristas','select=*&order=created_at.desc&limit=300');
+  if(rows)state.avaliacoesMotoristas=rows;
+}
+function openNovaAvaliacaoMotorista(){
+  mtNotas={};
+  motoristaCriteriosFlat().forEach(function(it){mtNotas[it.key]=5;});
+  mtFoto=null;mtGPS=null;
+  const selMot=document.getElementById('mt-motorista');
+  const ativos=state.colaboradores.filter(function(c){return c.ativo!==false;});
+  selMot.innerHTML='<option value="">Selecionar motorista</option>'+ativos.map(function(c){
+    return '<option value="'+c.id+'">'+c.nome+(c.cargo?' \u00b7 '+c.cargo:'')+'</option>';
+  }).join('');
+  document.getElementById('mt-avaliador').innerHTML=state.usuarios.map(function(u){
+    return '<option value="'+u.id+'">'+u.nome+'</option>';
+  }).join('');
+  document.getElementById('mt-placa').value='';
+  document.getElementById('mt-obs').value='';
+  document.getElementById('mt-foto-input').value='';
+  document.getElementById('mt-foto-preview').innerHTML='&#128247; Tirar foto ou anexar';
+  document.getElementById('mt-foto-preview').onclick=function(){document.getElementById('mt-foto-input').click();};
+  renderMotoristaCriterios();
+  atualizarPontuacaoMotorista();
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(pos){
+      mtGPS={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    },function(){mtGPS=null;},{enableHighAccuracy:true,timeout:6000});
+  }
+  openModal('modal-motorista');
+}
+function renderMotoristaCriterios(){
+  const c=document.getElementById('mt-criterios');
+  let html='';
+  CRITERIOS_MOTORISTA.forEach(function(grupo){
+    html+='<div class="mt-cat">'+grupo.cat+'</div>';
+    grupo.items.forEach(function(item){
+      const nota=mtNotas[item.key];
+      html+='<div class="mt-item"><div class="mt-text">'+item.label+'</div><div class="mt-actions">'+[1,2,3,4,5].map(function(n){
+        const cls=n===nota?(n<=2?'sel-low':(n===3?'sel-mid':'sel-high')):'';
+        return '<button type="button" class="mt-btn '+cls+'" onclick="setNotaMotorista(\''+item.key+'\','+n+')">'+n+'</button>';
+      }).join('')+'</div></div>';
+    });
+  });
+  c.innerHTML=html;
+}
+function setNotaMotorista(key,val){
+  mtNotas[key]=val;
+  renderMotoristaCriterios();
+  atualizarPontuacaoMotorista();
+}
+function calcularPontuacaoMotorista(){
+  const vals=Object.values(mtNotas);
+  const total=vals.reduce(function(a,b){return a+b;},0);
+  let classe,label,cor;
+  if(total>=60){classe='baixo_risco';label='Baixo Risco \u00b7 Perfil Seguro';cor='ok';}
+  else if(total>=38){classe='medio_risco';label='M\u00e9dio Risco \u00b7 Perfil Inconsistente';cor='warn';}
+  else{classe='alto_risco';label='Alto Risco \u00b7 Perfil Cr\u00edtico';cor='nc';}
+  return {total:total,max:vals.length*5,classe:classe,label:label,cor:cor};
+}
+function atualizarPontuacaoMotorista(){
+  const r=calcularPontuacaoMotorista();
+  const el=document.getElementById('mt-score-total');
+  if(el)el.textContent=r.total+' / '+r.max;
+  const badge=document.getElementById('mt-score-badge');
+  if(badge){badge.textContent=r.label;badge.className='badge badge-'+r.cor;}
+}
+function handleMtFotoCapture(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  processPhotoFile(file,function(foto){mtFoto=foto;},'mt-foto-preview');
+}
+async function salvarAvaliacaoMotorista(){
+  const colabId=document.getElementById('mt-motorista').value;
+  if(!colabId){alert('Selecione o motorista avaliado.');return;}
+  const avaliadorId=document.getElementById('mt-avaliador').value;
+  const colab=state.colaboradores.find(function(c){return String(c.id)===String(colabId);});
+  const avaliador=state.usuarios.find(function(u){return String(u.id)===String(avaliadorId);});
+  const r=calcularPontuacaoMotorista();
+  const btn=document.getElementById('mt-btn-salvar');
+  btn.disabled=true;btn.textContent='Salvando...';
+  const payload={
+    colaborador_id:colab?colab.id:null,
+    colaborador_nome:colab?colab.nome:null,
+    veiculo_placa:document.getElementById('mt-placa').value||null,
+    avaliador_id:avaliador?avaliador.id:null,
+    avaliador_nome:avaliador?avaliador.nome:null,
+    criterios:mtNotas,
+    pontuacao_total:r.total,
+    pontuacao_maxima:r.max,
+    classificacao:r.classe,
+    observacoes:document.getElementById('mt-obs').value||null,
+    foto_url:mtFoto?mtFoto.dataURL.substring(0,400000):null,
+    gps_lat:mtGPS?mtGPS.lat:null,
+    gps_lng:mtGPS?mtGPS.lng:null
+  };
+  const row=await sbInsert('avaliacoes_motoristas',payload);
+  btn.disabled=false;btn.textContent='SALVAR AVALIA\u00c7\u00c3O';
+  if(row){
+    closeModal('modal-motorista');
+    await loadAvaliacoesMotoristas();
+    renderMotoristasTable();
+    refreshMotoristasKPIs();
+    if(r.classe==='alto_risco'){
+      alert('Aten\u00e7\u00e3o: motorista classificado como Alto Risco. Recomenda-se abrir uma N\u00e3o Conformidade e agendar reciclagem imediata com o gestor de contratos.');
+    }
+  }else{
+    alert('Erro ao salvar. Verifique a conex\u00e3o e tente novamente.');
+  }
+}
+function classeBadgeMotorista(classe){
+  const map={baixo_risco:['badge-ok','Baixo Risco'],medio_risco:['badge-warn','M\u00e9dio Risco'],alto_risco:['badge-nc','Alto Risco']};
+  const m=map[classe]||['badge-na','\u2014'];
+  return '<span class="badge '+m[0]+'">'+m[1]+'</span>';
+}
+function filtrarMotoristasClasse(classe){
+  const sel=document.getElementById('filter-mot-classe');
+  if(sel)sel.value=classe;
+  renderMotoristasTable();
+}
+function renderMotoristasTable(){
+  const tbody=document.getElementById('tbody-motoristas');
+  if(!tbody)return;
+  let list=state.avaliacoesMotoristas||[];
+  const term=(document.getElementById('search-mot')||{}).value;
+  if(term)list=list.filter(function(a){return (a.colaborador_nome||'').toLowerCase().indexOf(term.toLowerCase())>=0;});
+  const filtroClasse=(document.getElementById('filter-mot-classe')||{}).value;
+  if(filtroClasse)list=list.filter(function(a){return a.classificacao===filtroClasse;});
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma avalia\u00e7\u00e3o registrada</td></tr>';return;}
+  tbody.innerHTML=list.map(function(a){
+    const data=a.created_at?new Date(a.created_at).toLocaleDateString('pt-BR'):'\u2014';
+    return '<tr><td>'+data+'</td><td>'+(a.colaborador_nome||'\u2014')+'</td><td>'+(a.veiculo_placa||'\u2014')+'</td><td>'+a.pontuacao_total+' / '+a.pontuacao_maxima+'</td><td>'+classeBadgeMotorista(a.classificacao)+'</td><td>'+(a.avaliador_nome||'\u2014')+'</td><td>'+(a.foto_url?'\u{1F4F7}':'\u2014')+'</td></tr>';
+  }).join('');
+}
+function refreshMotoristasKPIs(){
+  const list=state.avaliacoesMotoristas||[];
+  const elTotal=document.getElementById('mot-kpi-total');if(elTotal)elTotal.textContent=list.length;
+  const media=list.length?Math.round(list.reduce(function(a,b){return a+b.pontuacao_total;},0)/list.length):0;
+  const elMedia=document.getElementById('mot-kpi-media');if(elMedia)elMedia.textContent=list.length?media+' / 75':'\u2014';
+  const elAlto=document.getElementById('mot-kpi-alto');if(elAlto)elAlto.textContent=list.filter(function(a){return a.classificacao==='alto_risco';}).length;
+  const unicos={};list.forEach(function(a){if(a.colaborador_id)unicos[a.colaborador_id]=1;});
+  const elMot=document.getElementById('mot-kpi-motoristas');if(elMot)elMot.textContent=Object.keys(unicos).length;
+  const badgeNav=document.getElementById('badge-motoristas');
+  if(badgeNav){var altoCount=list.filter(function(a){return a.classificacao==='alto_risco';}).length;badgeNav.textContent=altoCount;badgeNav.style.display=altoCount>0?'inline-block':'none';}
 }
 function handleECFotoCapture(e){
   const file=e.target.files[0];
@@ -4103,7 +4368,7 @@ function refreshEmpresa(){
 document.addEventListener('DOMContentLoaded',function(){
   (async function(){
     /* Carregar dados em background enquanto login screen está visível */
-    await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores(),loadExtintores(),loadPlanejamento()]);
+    await Promise.all([loadPerfis(),loadUsuarios(),loadColaboradores(),loadExtintores(),loadPlanejamento(),loadAvaliacoesMotoristas()]);
     await loadInspecoes();
     await loadNCs();
     renderPerfilOptions();
@@ -4113,6 +4378,8 @@ document.addEventListener('DOMContentLoaded',function(){
     renderColabSelect();
     refreshColabList();
     refreshExtintoresKPIs();
+    renderMotoristasTable();
+    refreshMotoristasKPIs();
     updateSyncIndicator();
     /* M1: mostrar login, não o app */
     document.getElementById('login-screen').style.display='flex';
@@ -4122,6 +4389,8 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('filter-nc-status').addEventListener('change',refreshNCList);
     document.getElementById('search-nc').addEventListener('input',refreshNCList);
     document.getElementById('search-colab').addEventListener('input',refreshColabList);
+    var sMot=document.getElementById('search-mot');if(sMot)sMot.addEventListener('input',renderMotoristasTable);
+    var fMot=document.getElementById('filter-mot-classe');if(fMot)fMot.addEventListener('change',renderMotoristasTable);
     var sExt=document.getElementById('search-ext');if(sExt)sExt.addEventListener('input',refreshExtintoresList);
     var ftExt=document.getElementById('filter-ext-tipo');if(ftExt)ftExt.addEventListener('change',refreshExtintoresList);
     var fsExt=document.getElementById('filter-ext-status');if(fsExt)fsExt.addEventListener('change',refreshExtintoresList);
