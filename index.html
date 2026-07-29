@@ -697,11 +697,26 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
   </div>
   <div class="card" style="padding:0;overflow:auto">
     <table class="data-table" style="min-width:760px">
-      <thead><tr><th>Data</th><th>Motorista</th><th>Ve&iacute;culo/Placa</th><th>Pontua&ccedil;&atilde;o</th><th>Classifica&ccedil;&atilde;o</th><th>Avaliador</th><th>Evid&ecirc;ncia</th></tr></thead>
-      <tbody id="tbody-motoristas"><tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma avalia&ccedil;&atilde;o registrada</td></tr></tbody>
+      <thead><tr><th>Data</th><th>Motorista</th><th>Ve&iacute;culo/Placa</th><th>Pontua&ccedil;&atilde;o</th><th>Classifica&ccedil;&atilde;o</th><th>Avaliador</th><th>Evid&ecirc;ncia</th><th></th></tr></thead>
+      <tbody id="tbody-motoristas"><tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma avalia&ccedil;&atilde;o registrada</td></tr></tbody>
     </table>
   </div>
 </div>
+</div>
+
+<!-- MODAL HIST\u00d3RICO MOTORISTA -->
+<div class="overlay" id="modal-motorista-historico">
+  <div class="modal" style="max-width:600px">
+    <button class="modal-close" onclick="closeModal('modal-motorista-historico')">&#10005;</button>
+    <div class="modal-title" id="mth-titulo">&#128200; Hist&oacute;rico do Motorista</div>
+    <canvas id="mth-canvas" width="540" height="160" style="width:100%;height:160px;margin-bottom:14px"></canvas>
+    <div class="card" style="padding:0;overflow:auto">
+      <table class="data-table" style="min-width:420px">
+        <thead><tr><th>Data</th><th>Pontua&ccedil;&atilde;o</th><th>Classifica&ccedil;&atilde;o</th><th>Avaliador</th></tr></thead>
+        <tbody id="mth-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- PLANEJAMENTO SESMT -->
@@ -1160,6 +1175,18 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <div class="form-group" style="margin-bottom:14px">
       <label class="form-label">Observa&ccedil;&otilde;es de campo</label>
       <textarea class="form-input" id="mt-obs" rows="3" placeholder="Ex: freada brusca ao aproximar-se de cruzamento, uso de celular durante manobra..."></textarea>
+    </div>
+    <div class="form-row cols-2" style="margin-bottom:14px">
+      <div class="form-group">
+        <label class="form-label">Assinatura do avaliador</label>
+        <canvas id="mt-sig-avaliador" width="280" height="110" style="width:100%;height:100px;border:1.5px solid var(--card-border);border-radius:6px;background:#fff;touch-action:none"></canvas>
+        <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px" onclick="clearSignature('mt-sig-avaliador')">Limpar</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assinatura do motorista</label>
+        <canvas id="mt-sig-motorista" width="280" height="110" style="width:100%;height:100px;border:1.5px solid var(--card-border);border-radius:6px;background:#fff;touch-action:none"></canvas>
+        <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px" onclick="clearSignature('mt-sig-motorista')">Limpar</button>
+      </div>
     </div>
     <div class="page-sub" style="margin-bottom:14px">&#128205; GPS e hor&aacute;rio s&atilde;o capturados automaticamente ao salvar.</div>
 
@@ -2258,6 +2285,85 @@ let mtFoto=null;
 let mtGPS=null;
 function motoristaCriteriosFlat(){return [].concat.apply([],CRITERIOS_MOTORISTA.map(function(g){return g.items;}));}
 
+/* ============ ASSINATURA DIGITAL (CANVAS) ============ */
+const sigPads={};
+function setupSignaturePad(canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#112F3D';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
+  let drawing=false,hasInk=false;
+  function pos(e){
+    const rect=canvas.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    return {x:cx*(canvas.width/rect.width),y:cy*(canvas.height/rect.height)};
+  }
+  function start(e){drawing=true;hasInk=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();}
+  function move(e){if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();}
+  function end(){drawing=false;}
+  canvas.onmousedown=start;canvas.onmousemove=move;window.addEventListener('mouseup',end);
+  canvas.ontouchstart=start;canvas.ontouchmove=move;canvas.ontouchend=end;
+  sigPads[canvasId]={ctx:ctx,hasInk:function(){return hasInk;}};
+}
+function clearSignature(canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(sigPads[canvasId])sigPads[canvasId].hasInk=function(){return false;};
+}
+function getSignatureDataURL(canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas||!sigPads[canvasId]||!sigPads[canvasId].hasInk())return null;
+  return canvas.toDataURL('image/png');
+}
+
+/* ============ HIST\u00d3RICO / EVOLU\u00c7\u00c3O POR MOTORISTA ============ */
+function abrirHistoricoMotorista(colaboradorId,nome){
+  const list=(state.avaliacoesMotoristas||[]).filter(function(a){return String(a.colaborador_id)===String(colaboradorId);})
+    .sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});
+  document.getElementById('mth-titulo').innerHTML='&#128200; Hist&oacute;rico &middot; '+(nome||'Motorista');
+  document.getElementById('mth-tbody').innerHTML=list.slice().reverse().map(function(a){
+    const data=a.created_at?new Date(a.created_at).toLocaleDateString('pt-BR'):'\u2014';
+    return '<tr><td>'+data+'</td><td>'+a.pontuacao_total+' / '+a.pontuacao_maxima+'</td><td>'+classeBadgeMotorista(a.classificacao)+'</td><td>'+(a.avaliador_nome||'\u2014')+'</td></tr>';
+  }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--mist);opacity:.5;padding:20px">Sem avalia\u00e7\u00f5es anteriores</td></tr>';
+  drawSparkline('mth-canvas',list);
+  openModal('modal-motorista-historico');
+}
+function drawSparkline(canvasId,list){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,PAD=24;
+  ctx.clearRect(0,0,W,H);
+  if(list.length===0){
+    ctx.fillStyle='#8a9490';ctx.font='13px Barlow, sans-serif';ctx.textAlign='center';
+    ctx.fillText('Sem hist\u00f3rico suficiente para gr\u00e1fico',W/2,H/2);
+    return;
+  }
+  const max=75;
+  ctx.strokeStyle='rgba(196,207,204,.3)';ctx.lineWidth=1;
+  [0,38,60,75].forEach(function(v){
+    const y=H-PAD-(v/max)*(H-PAD*1.5);
+    ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-8,y);ctx.stroke();
+    ctx.fillStyle='#8a9490';ctx.font='9px Barlow, sans-serif';ctx.textAlign='left';ctx.fillText(v,2,y+3);
+  });
+  const stepX=list.length>1?(W-PAD-16)/(list.length-1):0;
+  ctx.beginPath();ctx.strokeStyle='#1D4038';ctx.lineWidth=2.5;
+  list.forEach(function(a,i){
+    const x=PAD+i*stepX,y=H-PAD-(a.pontuacao_total/max)*(H-PAD*1.5);
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  list.forEach(function(a,i){
+    const x=PAD+i*stepX,y=H-PAD-(a.pontuacao_total/max)*(H-PAD*1.5);
+    const cor=a.classificacao==='alto_risco'?'#B03A2E':(a.classificacao==='medio_risco'?'#9D6530':'#2E7D52');
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle=cor;ctx.fill();
+  });
+}
+
 /* ============ NAV MOBILE (Mais) ============ */
 function toggleMoreMenu(){
   const ov=document.getElementById('mobileMoreOverlay');
@@ -2567,6 +2673,10 @@ function openNovaAvaliacaoMotorista(){
   document.getElementById('mt-foto-preview').onclick=function(){document.getElementById('mt-foto-input').click();};
   renderMotoristaCriterios();
   atualizarPontuacaoMotorista();
+  setTimeout(function(){
+    setupSignaturePad('mt-sig-avaliador');
+    setupSignaturePad('mt-sig-motorista');
+  },50);
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(function(pos){
       mtGPS={lat:pos.coords.latitude,lng:pos.coords.longitude};
@@ -2637,7 +2747,9 @@ async function salvarAvaliacaoMotorista(){
     observacoes:document.getElementById('mt-obs').value||null,
     foto_url:mtFoto?mtFoto.dataURL.substring(0,400000):null,
     gps_lat:mtGPS?mtGPS.lat:null,
-    gps_lng:mtGPS?mtGPS.lng:null
+    gps_lng:mtGPS?mtGPS.lng:null,
+    assinatura_avaliador:getSignatureDataURL('mt-sig-avaliador'),
+    assinatura_motorista:getSignatureDataURL('mt-sig-motorista')
   };
   const row=await sbInsert('avaliacoes_motoristas',payload);
   btn.disabled=false;btn.textContent='SALVAR AVALIA\u00c7\u00c3O';
@@ -2647,7 +2759,27 @@ async function salvarAvaliacaoMotorista(){
     renderMotoristasTable();
     refreshMotoristasKPIs();
     if(r.classe==='alto_risco'){
-      alert('Aten\u00e7\u00e3o: motorista classificado como Alto Risco. Recomenda-se abrir uma N\u00e3o Conformidade e agendar reciclagem imediata com o gestor de contratos.');
+      const itensCriticos=Object.keys(mtNotas).filter(function(k){return mtNotas[k]<=2;});
+      const labelsCriticos=motoristaCriteriosFlat().filter(function(it){return itensCriticos.indexOf(it.key)>=0;}).map(function(it){return it.label;});
+      const ncPayload={
+        inspecao_id:null,
+        categoria:'GV',secao:'GV',codigo:'AVAL-MOTORISTA',
+        pergunta:'Avalia\u00e7\u00e3o comportamental de tr\u00e2nsito \u2014 classifica\u00e7\u00e3o Alto Risco',
+        desvio:(labelsCriticos.length?'Itens cr\u00edticos (nota \u22642): '+labelsCriticos.join('; '):'')+(document.getElementById('mt-obs').value?' \u2014 '+document.getElementById('mt-obs').value:''),
+        tolerancia_zero:true,
+        obs:'Pontua\u00e7\u00e3o obtida: '+r.total+' / '+r.max+' \u00b7 Ve\u00edculo: '+(document.getElementById('mt-placa').value||'\u2014'),
+        acao:null,resp:null,prazo:null,
+        colab_nomes:colab?[colab.nome]:[],
+        foto_nc:mtFoto?{dataURL:mtFoto.dataURL?mtFoto.dataURL.substring(0,400000):null,timestamp:mtFoto.timestamp,coords:mtFoto.coords}:null,
+        status_nc:'Aberta'
+      };
+      const ncRow=await sbInsert('nao_conformidades',[ncPayload]);
+      if(ncRow&&ncRow[0]){
+        await sbUpdate('avaliacoes_motoristas',row[0].id,{nc_id:ncRow[0].id});
+        await loadNCs();
+        if(typeof refreshNCList==='function')refreshNCList();
+      }
+      alert('Motorista classificado como Alto Risco. Uma N\u00e3o Conformidade foi aberta automaticamente \u2014 defina respons\u00e1vel e prazo em "N\u00e3o Conformidades".');
     }
   }else{
     alert('Erro ao salvar. Verifique a conex\u00e3o e tente novamente.');
@@ -2671,10 +2803,10 @@ function renderMotoristasTable(){
   if(term)list=list.filter(function(a){return (a.colaborador_nome||'').toLowerCase().indexOf(term.toLowerCase())>=0;});
   const filtroClasse=(document.getElementById('filter-mot-classe')||{}).value;
   if(filtroClasse)list=list.filter(function(a){return a.classificacao===filtroClasse;});
-  if(list.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma avalia\u00e7\u00e3o registrada</td></tr>';return;}
+  if(list.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--mist);opacity:.5;padding:40px">Nenhuma avalia\u00e7\u00e3o registrada</td></tr>';return;}
   tbody.innerHTML=list.map(function(a){
     const data=a.created_at?new Date(a.created_at).toLocaleDateString('pt-BR'):'\u2014';
-    return '<tr><td>'+data+'</td><td>'+(a.colaborador_nome||'\u2014')+'</td><td>'+(a.veiculo_placa||'\u2014')+'</td><td>'+a.pontuacao_total+' / '+a.pontuacao_maxima+'</td><td>'+classeBadgeMotorista(a.classificacao)+'</td><td>'+(a.avaliador_nome||'\u2014')+'</td><td>'+(a.foto_url?'\u{1F4F7}':'\u2014')+'</td></tr>';
+    return '<tr><td>'+data+'</td><td>'+(a.colaborador_nome||'\u2014')+'</td><td>'+(a.veiculo_placa||'\u2014')+'</td><td>'+a.pontuacao_total+' / '+a.pontuacao_maxima+'</td><td>'+classeBadgeMotorista(a.classificacao)+'</td><td>'+(a.avaliador_nome||'\u2014')+'</td><td>'+(a.foto_url?'\u{1F4F7}':'\u2014')+'</td><td><button class="btn btn-outline btn-sm" onclick="abrirHistoricoMotorista(\''+a.colaborador_id+'\',\''+(a.colaborador_nome||'').replace(/'/g,"")+'\')">&#128200;</button></td></tr>';
   }).join('');
 }
 function refreshMotoristasKPIs(){
