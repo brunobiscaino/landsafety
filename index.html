@@ -268,6 +268,15 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
   .grid-2,.grid-3{grid-template-columns:1fr}.form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr}
   .insp-form{padding:16px}.cl-container{padding:0 0 100px}
   .checklist-topbar{padding:10px 16px}.cl-footer{padding:10px 16px}
+  .modal{padding:18px 14px;max-height:94vh}
+  .mt-item{grid-template-columns:1fr}
+  .mt-text{padding:10px 10px 6px}
+  .mt-actions{border-left:none;border-top:1px solid var(--card-border)}
+  .mt-btn{flex:1;height:40px;font-size:14px}
+  .mt-score-box{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
+  .mt-score-num{font-size:22px}
+  .mt-cat{padding:16px 2px 6px;font-size:10.5px}
+  #mt-criterios{margin:0 -4px}
   /* M1: mobile scroll — app-shell flows naturally, body scrolls */
   .app-shell{overflow:visible;flex:1}
   .main-content{overflow:visible}
@@ -1155,7 +1164,12 @@ body.tema-claro .badge-na{background:rgba(17,47,61,.06) !important;color:var(--n
     <button class="modal-close" onclick="closeModal('modal-motorista')">&#10005;</button>
     <div class="modal-title">&#128663; Avalia&ccedil;&atilde;o Comportamental de Tr&acirc;nsito</div>
     <div class="form-row cols-2">
-      <div class="form-group"><label class="form-label">Motorista avaliado</label><select class="form-select" id="mt-motorista"></select></div>
+      <div class="form-group">
+        <label class="form-label">Matr&iacute;cula do motorista</label>
+        <input class="form-input" id="mt-matricula" inputmode="numeric" autocomplete="off" placeholder="Digite a matr&iacute;cula" oninput="buscarMotoristaPorMatricula()">
+        <div id="mt-motorista-nome" style="margin-top:6px;font-size:12.5px;min-height:18px"></div>
+        <input type="hidden" id="mt-motorista-id">
+      </div>
       <div class="form-group"><label class="form-label">Ve&iacute;culo / Placa</label><input class="form-input" id="mt-placa" placeholder="Ex: OYE-1234"></div>
     </div>
     <div class="form-group" style="margin-bottom:14px"><label class="form-label">Avaliador / Observador a bordo</label><select class="form-select" id="mt-avaliador"></select></div>
@@ -2284,6 +2298,34 @@ let mtNotas={};
 let mtFoto=null;
 let mtGPS=null;
 function motoristaCriteriosFlat(){return [].concat.apply([],CRITERIOS_MOTORISTA.map(function(g){return g.items;}));}
+function buscarMotoristaPorMatricula(){
+  const mat=(document.getElementById('mt-matricula').value||'').trim();
+  const disp=document.getElementById('mt-motorista-nome');
+  const hidden=document.getElementById('mt-motorista-id');
+  if(!mat){disp.innerHTML='';hidden.value='';return;}
+  const exato=state.colaboradores.find(function(c){return (c.mat||'').trim()===mat;});
+  if(exato){
+    disp.innerHTML='<span style="color:#2E7D52">&#10003; '+exato.nome+(exato.cargo?' &middot; '+exato.cargo:'')+'</span>';
+    hidden.value=exato.id;
+    return;
+  }
+  hidden.value='';
+  const parciais=state.colaboradores.filter(function(c){return (c.mat||'').indexOf(mat)===0;}).slice(0,5);
+  if(parciais.length){
+    disp.innerHTML='<div style="color:var(--mist);margin-bottom:4px">Selecione:</div>'+parciais.map(function(c){
+      return '<button type="button" class="btn btn-outline btn-sm" style="margin:2px 4px 2px 0" onclick="selecionarMotoristaSugerido(\''+c.id+'\')">'+(c.mat||'\u2014')+' \u2014 '+c.nome+'</button>';
+    }).join('');
+  }else{
+    disp.innerHTML='<span style="color:#B03A2E">Matr\u00edcula n\u00e3o encontrada</span>';
+  }
+}
+function selecionarMotoristaSugerido(id){
+  const c=state.colaboradores.find(function(x){return String(x.id)===String(id);});
+  if(!c)return;
+  document.getElementById('mt-matricula').value=c.mat||'';
+  document.getElementById('mt-motorista-id').value=c.id;
+  document.getElementById('mt-motorista-nome').innerHTML='<span style="color:#2E7D52">&#10003; '+c.nome+(c.cargo?' &middot; '+c.cargo:'')+'</span>';
+}
 
 /* ============ ASSINATURA DIGITAL (CANVAS) ============ */
 const sigPads={};
@@ -2658,11 +2700,10 @@ function openNovaAvaliacaoMotorista(){
   mtNotas={};
   motoristaCriteriosFlat().forEach(function(it){mtNotas[it.key]=5;});
   mtFoto=null;mtGPS=null;
-  const selMot=document.getElementById('mt-motorista');
-  const ativos=state.colaboradores.filter(function(c){return c.ativo!==false;});
-  selMot.innerHTML='<option value="">Selecionar motorista</option>'+ativos.map(function(c){
-    return '<option value="'+c.id+'">'+c.nome+(c.cargo?' \u00b7 '+c.cargo:'')+'</option>';
-  }).join('');
+  const selMot=document.getElementById('mt-matricula');
+  selMot.value='';
+  document.getElementById('mt-motorista-id').value='';
+  document.getElementById('mt-motorista-nome').innerHTML='';
   document.getElementById('mt-avaliador').innerHTML=state.usuarios.map(function(u){
     return '<option value="'+u.id+'">'+u.nome+'</option>';
   }).join('');
@@ -2676,6 +2717,7 @@ function openNovaAvaliacaoMotorista(){
   setTimeout(function(){
     setupSignaturePad('mt-sig-avaliador');
     setupSignaturePad('mt-sig-motorista');
+    var mf=document.getElementById('mt-matricula');if(mf)mf.focus();
   },50);
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(function(pos){
@@ -2726,8 +2768,8 @@ function handleMtFotoCapture(e){
   processPhotoFile(file,function(foto){mtFoto=foto;},'mt-foto-preview');
 }
 async function salvarAvaliacaoMotorista(){
-  const colabId=document.getElementById('mt-motorista').value;
-  if(!colabId){alert('Selecione o motorista avaliado.');return;}
+  const colabId=document.getElementById('mt-motorista-id').value;
+  if(!colabId){alert('Digite a matr\u00edcula e selecione o motorista avaliado.');return;}
   const avaliadorId=document.getElementById('mt-avaliador').value;
   const colab=state.colaboradores.find(function(c){return String(c.id)===String(colabId);});
   const avaliador=state.usuarios.find(function(u){return String(u.id)===String(avaliadorId);});
