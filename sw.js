@@ -3,7 +3,7 @@
    incrementar CACHE_VERSION (v1 -> v2 -> ...) para forçar atualização nos dispositivos
    dos inspetores em campo. Sem isso, o app pode ficar "preso" numa versão antiga. */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = 'landsafety-shell-' + CACHE_VERSION;
 
 const APP_SHELL = [
